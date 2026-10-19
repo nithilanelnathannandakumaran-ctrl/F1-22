@@ -11,4 +11,4 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "f1-22"
-database_id = "PASTE_YOUR_DATABASE_ID_HERE"
+database_id = "afc37774-0fdb-4135-a093-ec8b7b7e60de"
