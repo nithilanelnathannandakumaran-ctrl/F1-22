@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>F1 22 Admin</title>
+<style>
+:root{--bg:#0e0e11;--card:#17171c;--line:#2a2a33;--fg:#f2f2f4;--mut:#9a9aa6;--red:#e10600;--ok:#35c46a;--warn:#f5b301}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,Segoe UI,Roboto,sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:3px solid var(--red);background:#000}
+header h1{margin:0;font-size:20px;letter-spacing:.06em;font-style:italic}header h1 em{color:var(--red)}
+header .sp{flex:1}
+main{max-width:1200px;margin:0 auto;padding:18px 16px 60px}
+button{font:inherit;font-weight:600;color:var(--fg);background:#26262e;border:1px solid var(--line);border-radius:4px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:#555}button.pri{background:var(--red);border-color:var(--red)}button.dng{color:#ff6b66}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #fff;outline-offset:2px}
+input,select{font:inherit;color:var(--fg);background:#0b0b0e;border:1px solid var(--line);border-radius:4px;padding:7px 10px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px}.stat b{display:block;font-size:26px}.stat span{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center}.bar input{flex:1;min-width:180px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);background:#121216}
+tr:last-child td{border-bottom:0}td.act{white-space:nowrap;text-align:right}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.t-ok{background:#12351f;color:var(--ok)}.t-ban{background:#3b1210;color:#ff6b66}.t-on{background:#0f2f4a;color:#58b4ff}
+.mut{color:var(--mut)}h2{font-size:15px;margin:26px 0 10px;letter-spacing:.06em;text-transform:uppercase}
+dialog{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:20px;width:min(440px,92vw)}
+dialog::backdrop{background:#000a}dialog h3{margin:0 0 12px}dialog label{display:block;margin:10px 0 4px;color:var(--mut);font-size:12px}
+dialog input,dialog select{width:100%}.row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+#login{max-width:340px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:24px}
+#login input{width:100%;margin:10px 0}.err{color:#ff6b66;min-height:20px}
+.log{font-size:13px;color:var(--mut)}.log b{color:var(--fg)}
+@media(max-width:760px){th:nth-child(n+4),td:nth-child(n+4){display:none}td.act{display:block}}
+</style></head><body>
+<header><h1>F1 <em>22</em> &middot; Admin</h1><span class="sp"></span><span id="regState" class="mut"></span><button id="regBtn" hidden>Toggle sign-ups</button><button id="outAll" hidden class="dng">Log everyone out</button><button id="out" hidden>Sign out</button></header>
+<main>
+<div id="login"><h2 style="margin-top:0">Admin sign in</h2><input id="pw" type="password" placeholder="Admin password" autocomplete="current-password"><div class="err" id="err"></div><button class="pri" id="go">Sign in</button></div>
+<div id="app" hidden>
+ <div class="stats" id="stats"></div>
+ <div class="bar"><input id="q" placeholder="Search username"><button id="refresh">Refresh</button></div>
+ <table><thead><tr><th>Username</th><th>Status</th><th>Driver name</th><th>Joined</th><th>Last seen</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+ <h2>Activity log</h2><div class="log" id="log"></div>
+</div></main>
+<dialog id="dlg"><form method="dialog" id="dform"><h3 id="dt"></h3><div id="db"></div><div class="row"><button value="x" type="button" id="dc">Cancel</button><button class="pri" id="dok" value="ok">Confirm</button></div></form></dialog>
+<script>
+const $=id=>document.getElementById(id);let D=null;
+const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function api(path,body,method){const r=await fetch('/api/admin/'+path,{method:method||(body?'POST':'GET'),headers:{'content-type':'application/json'},body:body?JSON.stringify(body):undefined});
+  let j={};try{j=await r.json()}catch(e){}if(r.status===401&&path!=='login'){show(false)}return {ok:r.ok,j}}
+const ago=(t,now)=>{if(!t)return'never';const s=Math.max(0,(now-t)/1000);return s<90?'just now':s<5400?Math.round(s/60)+' min ago':s<172800?Math.round(s/3600)+' h ago':Math.round(s/86400)+' d ago'};
+const fd=t=>new Date(t).toLocaleDateString();
+function show(on){$('login').hidden=on;$('app').hidden=!on;$('out').hidden=$('regBtn').hidden=$('outAll').hidden=!on;if(!on)$('regState').textContent=''}
+async function load(){const {ok,j}=await api('overview?q='+encodeURIComponent($('q').value));if(!ok)return;D=j;show(true);
+  $('stats').innerHTML=[['Accounts',j.stats.total],['Online now',j.stats.online||0],['Banned',j.stats.banned||0],['Joined 24h',j.stats.today||0]].map(s=>`<div class="stat"><b>${s[1]}</b><span>${s[0]}</span></div>`).join('');
+  $('regState').textContent='Sign-ups: '+(j.registration?'open':'CLOSED');
+  $('rows').innerHTML=j.users.map(u=>{const b=u.banned_until>j.now;const on=u.last_seen>j.now-3e5;
+    const st=b?`<span class="tag t-ban">Banned ${u.banned_until>=9e15?'permanently':'until '+new Date(u.banned_until).toLocaleString()}</span>`:on?'<span class="tag t-on">Online</span>':'<span class="tag t-ok">Active</span>';
+    return `<tr><td><b>${esc(u.username)}</b>${u.ban_reason&&b?`<div class="mut">${esc(u.ban_reason)}</div>`:''}</td><td>${st}</td><td>${esc(u.driver)||'<span class="mut">-</span>'}</td><td class="mut">${fd(u.created_at)}</td><td class="mut">${ago(u.last_seen,j.now)}</td>
+    <td class="act"><button data-a="rename" data-i="${u.id}">Rename</button> <button data-a="${b?'unban':'ban'}" data-i="${u.id}" class="${b?'':'dng'}">${b?'Unban':'Ban'}</button> <button data-a="more" data-i="${u.id}">More</button></td></tr>`}).join('')||'<tr><td colspan="6" class="mut">No accounts yet</td></tr>';
+  $('log').innerHTML=j.log.map(l=>`<div><b>${esc(l.action)}</b> ${esc(l.target)} <span>${esc(l.detail)}</span> &middot; ${new Date(l.at).toLocaleString()}</div>`).join('')||'No activity yet'}
+function ask(title,html,okText){return new Promise(res=>{$('dt').textContent=title;$('db').innerHTML=html;$('dok').textContent=okText||'Confirm';const d=$('dlg');
+  const done=v=>{d.close();res(v)};$('dc').onclick=()=>done(null);$('dform').onsubmit=e=>{e.preventDefault();done(Object.fromEntries([...new FormData($('dform'))]))};d.showModal()})}
+async function act(path,body,ok){const {ok:g,j}=await api(path,body);if(!g)alert(j.error||'Failed');else if(ok)alert(ok);load()}
+const U=id=>D.users.find(u=>u.id==id);
+$('rows').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const id=+b.dataset.i,u=U(id),a=b.dataset.a;
+  if(a==='rename'){const r=await ask('Rename '+u.username,`<label>Username (used to sign in)</label><input name="username" value="${esc(u.username)}" maxlength="20" required><label>Driver name shown in game</label><input name="driver" value="${esc(u.driver||u.username)}" maxlength="22">`,'Save');
+    if(!r)return;if(r.username!==u.username){const x=await api('rename',{id,username:r.username});if(!x.ok)return alert(x.j.error)}
+    if(r.driver!==(u.driver||u.username))await api('driver',{id,name:r.driver});load()}
+  if(a==='ban'){const r=await ask('Ban '+u.username,`<label>Duration</label><select name="m"><option value="60">1 hour</option><option value="1440">24 hours</option><option value="10080">7 days</option><option value="43200">30 days</option><option value="0">Permanent</option></select><label>Reason (shown to the player)</label><input name="reason" maxlength="200" placeholder="Optional">`,'Ban');
+    if(r)act('ban',{id,minutes:+r.m,reason:r.reason})}
+  if(a==='unban')act('unban',{id});
+  if(a==='more'){const r=await ask(u.username,`<label>Action</label><select name="a"><option value="kick">Force log out (all devices)</option><option value="password">Reset password</option><option value="reset-times">Reset best lap times</option><option value="delete">Delete account</option></select><div id="x"></div>`,'Next');
+    if(!r)return;if(r.a==='kick')act('kick',{id},'Signed out everywhere.');
+    if(r.a==='reset-times'&&confirm('Wipe best laps for '+u.username+'?'))act('reset-times',{id});
+    if(r.a==='delete'&&confirm('Permanently delete '+u.username+'? This cannot be undone.'))act('delete',{id});
+    if(r.a==='password'){const p=await ask('New password for '+u.username,'<label>New password (6+ characters)</label><input name="p" type="text" minlength="6" required>','Set');if(p)act('password',{id,password:p.p},'Password changed and player signed out.')}}};
+$('go').onclick=async()=>{const {ok,j}=await api('login',{password:$('pw').value});if(!ok){$('err').textContent=j.error||'Failed';return}$('pw').value='';$('err').textContent='';load()};
+$('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
+$('out').onclick=async()=>{await api('logout',{});show(false)};
+$('regBtn').onclick=async()=>{await api('registration',{on:!D.registration});load()};
+$('outAll').onclick=async()=>{if(confirm('Sign every player out?')){await api('logout-all',{});load()}};
+$('refresh').onclick=load;let t;$('q').oninput=()=>{clearTimeout(t);t=setTimeout(load,250)};
+load();setInterval(()=>{if(!$('app').hidden)load()},30000);
+</script></body></html>
