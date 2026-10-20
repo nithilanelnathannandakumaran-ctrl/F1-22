@@ -11,3 +11,10 @@ run_worker_first = ["/api/*"]
 binding = "DB"
 database_name = "f1-22"
 database_id = "afc37774-0fdb-4135-a093-ec8b7b7e60de"
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
