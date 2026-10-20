@@ -57,6 +57,11 @@ body{touch-action:none;-webkit-user-select:none;user-select:none}
 .pedals div.br i{background:var(--red)}
 .msg{position:absolute;left:0;right:0;top:30%;text-align:center;font-weight:700;font-size:clamp(44px,11vw,110px);letter-spacing:.04em;text-transform:uppercase;text-shadow:0 4px 30px rgba(0,0,0,.6);opacity:0;transition:opacity .3s}
 .msg.show{opacity:1}
+.flagbar{position:absolute;left:50%;top:max(74px,calc(env(safe-area-inset-top,0px) + 74px));transform:translateX(-50%);padding:8px 22px;border-radius:3px;background:#f5d90a;color:#111;font:900 italic 22px var(--display);letter-spacing:.08em;text-transform:uppercase;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.5);pointer-events:none;z-index:4}
+.flagbar small{display:block;font:600 12px var(--mono);letter-spacing:.04em;text-transform:none;margin-top:2px}
+.flagbar.blink{animation:fb 1s steps(2,jump-none) infinite}.flagbar.green{background:#19b34a;color:#fff}
+@keyframes fb{50%{filter:brightness(.72)}}
+@media(max-width:1000px){.flagbar{left:auto;right:14px;top:190px;transform:none;max-width:200px;font-size:17px;padding:6px 12px}}
 .msg small{display:block;font-family:var(--mono);font-size:.34em;letter-spacing:.02em;margin-top:6px}
 .hint{max-width:230px;position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:max(12px,env(safe-area-inset-bottom,0px));font-size:14px;letter-spacing:.06em;color:#fff;background:var(--panel);border:1px solid var(--line);padding:8px 10px;border-radius:4px;line-height:1.5;transition:opacity 1s}
 .hint kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.08)}
@@ -165,7 +170,7 @@ button.go:hover:not(:disabled){filter:brightness(1.18)}
   </div>
   <div class="mapbox panel"><canvas id="map" width="360" height="300"></canvas></div>
   <div class="lights panel" id="lights"><i></i><i></i><i></i><i></i><i></i></div>
-  <div class="msg" id="msg"></div>
+  <div class="msg" id="msg"></div><div class="flagbar" id="flagBar" hidden></div>
   <div class="tag panel" id="pitTag" hidden></div>
   <div class="pitmenu panel" id="pitMenu" hidden><h2>Pit stop · pick tyres</h2><div class="tyres" id="pitTyres"></div><div class="sub" id="pitSub"></div></div>
   <div class="cluster panel">
@@ -216,8 +221,7 @@ button.go:hover:not(:disabled){filter:brightness(1.18)}
 <div class="btns"><button class="go alt" id="mpJoin">Join room</button><button class="go alt" id="mpBack">Back</button></div></div>
 <div id="mpRoom" hidden><div style="font:700 44px var(--display);letter-spacing:.2em;margin:4px 0">ROOM <span id="mpCodeShow" style="color:var(--signal)"></span></div>
 <div class="sub" id="mpTrack"></div><div id="mpList" style="margin:12px 0"></div>
-<div class="btns" id="mpCfg"><label class="fld" style="margin:0">Laps <select id="mpLaps"><option>1</option><option>3</option><option selected>5</option><option>10</option><option>20</option></select></label>
-<label class="fld" style="margin:0">Tyres <select id="mpTy"><option value="0">Soft</option><option value="1" selected>Medium</option><option value="2">Hard</option></select></label></div>
+<div class="btns" id="mpCfg"><label class="fld" style="margin:0">Tyres <select id="mpTy"><option value="0">Soft</option><option value="1" selected>Medium</option><option value="2">Hard</option></select></label></div>
 <div class="btns" style="margin-top:12px"><button class="go" id="mpStart">Start race</button><button class="go alt" id="mpLeave">Leave room</button></div></div>
 <div class="err" id="mpMsg"></div></div></div>
 <div class="overlay" id="login" style="z-index:9"><div class="card panel"><h1>Pit <em>wall</em></h1><p>Sign in to keep your driver profile on this device.</p>
@@ -785,14 +789,96 @@ const inp={thr:0,brk:0,steer:0};
 const keys={};
 function placeCar(i,off){const q=trackPt(i,off||0),t=TR.t[((i%TR.N)+TR.N)%TR.N];
   S.x=q[0];S.z=q[2];S.th=Math.atan2(t[0],t[1]);S.vx=S.vz=0;S.yaw=0;S.steer=0;S.delta=0;S.roll=S.pitch=0;S.hint=null;S.q=query(S.x,S.z,null);S.hint=S.q.i;G.prevProg=S.q.prog}
-function resetToTrack(){const i=S.q?S.q.i:0;placeCar(i,0);S.lane=false;S.limit=false;G.pit=null;$('pitMenu').hidden=true;S.pl0=srOf(S.q.prog);G.lapActive=false;G.secPassed=0;G.sec=[null,null,null];updateSectors();flash('Reset')}
+function resetToTrack(){if(S.wreck){if(S.wreck.t<1.2)return;S.wreck=null;S.cr=null;S.det=null;S.roll=S.pitch=S.lift=0;S.vx=S.vz=0;S.yaw=0}const i=S.q?S.q.i:0;placeCar(i,0);S.lane=false;S.limit=false;G.pit=null;$('pitMenu').hidden=true;S.pl0=srOf(S.q.prog);G.lapActive=false;G.secPassed=0;G.sec=[null,null,null];updateSectors();flash('Reset')}
 
 /* ---------- rivals + race ---------- */
-let LAPS=5;const NAI=18,GRID=Array.from({length:NAI+1},(_,k)=>[-5-4*k,k%2?-2.3:2.3]),PSLOT=7,SKILL=Array.from({length:NAI},(_,k)=>.975-k*.0065),LINEW=Array.from({length:NAI},(_,k)=>[.9,1,.85,.95,.8][k%5]);
+let LAPS=10;const NAI=18,GRID=Array.from({length:NAI+1},(_,k)=>[-5-4*k,k%2?-2.3:2.3]),PSLOT=7,SKILL=Array.from({length:NAI},(_,k)=>.975-k*.0065),LINEW=Array.from({length:NAI},(_,k)=>[.9,1,.85,.95,.8][k%5]);
 const AI=[];
 const rgb=c=>'rgb('+c.map(v=>Math.round(clamp(v*1.12,0,1)*255)).join(',')+')';
 function trackXY(s,d){const N=TR.N,f=Math.floor(s),t=s-f,i=((f%N)+N)%N,j=(i+1)%N,c0=TR.c[i],c1=TR.c[j],l0=TR.l[i],l1=TR.l[j];
   return [c0[0]+(c1[0]-c0[0])*t+(l0[0]+(l1[0]-l0[0])*t)*d,c0[1]+(c1[1]-c0[1])*t+(l0[1]+(l1[1]-l0[1])*t)*d]}
+
+/* ---------- crashes, yellow flag, safety car ---------- */
+const SCS={st:'none',t:0,car:null,plan:null,el:0,cs:0,sec:0,hold:0};
+const SC_PACE=40;
+const restLift=r=>Math.max(Math.abs(Math.sin(r)),(1-Math.cos(r))*.5)*1.0;
+function crashStart(c,vx,vz,vn,sd){
+  const sp=Math.hypot(vx,vz),dir=sd||1,k=clamp(vn/18,.6,1.6);
+  c.cr={rollV:dir*(4+vn*.28)*k*(Math.random()<.5?1:-1),pitchV:(Math.random()-.5)*3,vy:clamp(vn*.22,2.5,6.5),rest:false,t:0};
+  const ws=['FL','FR','RL','RR'].sort(()=>Math.random()-.5).slice(0,2);c.det={};
+  ws.forEach((w,i)=>{const wd=META.wheels[w],fx=Math.sin(c.th),fz=Math.cos(c.th),lx=Math.cos(c.th),lz=-Math.sin(c.th);
+    const ox=wd.c[0],oz=wd.c[2];
+    c.det[w]={x:c.x+lx*ox+fx*oz,y:.5,z:c.z+lz*ox+fz*oz,vx:vx*.55+(Math.random()-.5)*9,vy:5+Math.random()*7,vz:vz*.55+(Math.random()-.5)*9,sp:0,spv:20+Math.random()*20,ry:c.th}});
+  c.crashYaw=dir*(2+Math.random()*3);
+}
+function crashStep(c,dt){
+  const cr=c.cr;if(!cr)return;cr.t+=dt;
+  cr.vy-=9.8*dt;c.lift=(c.lift||0)+cr.vy*dt;c.roll=(c.roll||0)+cr.rollV*dt;c.pitch=clamp((c.pitch||0)+cr.pitchV*dt,-.6,.6);
+  const rl=restLift(c.roll);
+  if(c.lift<=rl){c.lift=rl;if(cr.vy<-2){cr.vy=-cr.vy*.32;cr.rollV*=.72;cr.pitchV*=.6;G.shake=Math.max(G.shake,.25)}else{cr.vy=0;cr.rollV*=Math.exp(-dt*2.4);cr.pitchV*=Math.exp(-dt*3);
+      if(Math.abs(cr.rollV)<1.1){const tg=Math.round(c.roll/(Math.PI/2))*(Math.PI/2);c.roll+=(tg-c.roll)*Math.min(1,dt*5);cr.rollV*=.9;if(Math.abs(tg-c.roll)<.02)cr.rest=true}}}
+  c.pitch*=Math.exp(-dt*(c.lift<=rl+.01?2:.2));
+  if(c.det)for(const w in c.det){const d=c.det[w];d.vy-=9.8*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.z+=d.vz*dt;d.sp+=d.spv*dt;
+    if(d.y<.38){d.y=.38;if(d.vy<-1.2)d.vy=-d.vy*.38;else d.vy=0;d.vx*=Math.exp(-dt*1.6);d.vz*=Math.exp(-dt*1.6);d.spv*=Math.exp(-dt*1.6)}}
+}
+const SCpace=()=>SC_PACE;
+// queue speed limit behind the nearest thing ahead (cars, safety car) in ring distance
+function scGapLimit(sTot,self,isPlayer){
+  const N=TR.N;let lim=SC_PACE+(isPlayer?5:0);
+  const chk=(so,vo)=>{const dr=(((so-sTot)%N)+N)%N,gm=dr*STEP;if(gm>0&&gm<46){lim=Math.min(lim,vo*clamp((gm-12)/30,0,1.15))}};
+  for(const b of AI){if(b===self||b.crashed||b.crash||b.pit>=2||b.fin)continue;chk(b.s,b.v)}
+  if(SCS.car&&SCS.st!=='pending')chk(SCS.car.s,SCS.car.v);
+  if(!isPlayer&&!(S.lane||G.pit))chk(S.lapOffset+S.q.prog,Math.hypot(S.vx,S.vz));
+  return lim}
+const scActive=()=>SCS.st==='pending'||SCS.st==='out'||SCS.st==='in';
+function flagBar(txt,sub,cls){const e=$('flagBar');if(!txt){e.hidden=true;return}e.hidden=false;e.className='flagbar '+(cls||'');e.innerHTML=txt+(sub?'<small>'+sub+'</small>':'')}
+function scReset(){SCS.st='none';SCS.t=0;SCS.car=null;SCS.plan=null;SCS.el=0;flagBar(null);for(const a of AI){a.crash=0;a.crashed=false;a.cr=null;a.det=null;a.lift=0;a.roll=0;a.pitch=0}if(S.cr){S.cr=null;S.det=null;S.wreck=null;S.lift=S.roll=S.pitch=0}}
+function scPlan(){
+  if(!G.race||G.mp||AI.length<8){SCS.plan=null;return}
+  const N=TR.N;let best=-1,bk=0;
+  for(let i=Math.floor(N*.2);i<N*.72;i++){const sr=srOf(i);if(sr>-220&&sr<320)continue;let km=0;for(let j=-6;j<=6;j++)km+=TR.k[(i+j+N)%N];km/=13;
+    if(Math.abs(km)>bk&&!inEsc(i,1)&&!inEsc(i,-1)&&!inEsc(i+30,1)&&!inEsc(i+30,-1)&&!inEsc(i-30,1)&&!inEsc(i-30,-1)){bk=Math.abs(km);best=i}}
+  if(best<0){SCS.plan=null;return}
+  let km=0;for(let j=-6;j<=6;j++)km+=TR.k[(best+j+N)%N];
+  SCS.plan={k:5,i:best,side:km>=0?1:-1,lap:1+(Math.random()<.5?0:1),done:false};
+  SCS.sec=Math.min(2,Math.floor(best/(N/3)))}
+function scCreate(){
+  const liv={name:'SC',paint:[.95,.78,.04],accent:[.05,.05,.05],tyre:[.9,.9,.9],rim:[.1,.1,.1]};
+  const p=trackXY(PX0-22,-PLC);SCS.car={liv,s:PX0-22,d:-PLC,v:0,x:p[0],z:p[1],th:0,thT:0,delta:0,spin:0,roll:0,pitch:0,ring:true};aiPlace(SCS.car,0)}
+function scDof(c){
+  const N=TR.N,sr=srOf(((c.s%N)+N)%N),i=((Math.floor(c.s)%N)+N)%N;
+  if(SCS.st==='in'&&sr>=PE0-2&&sr<=PE1+4){const r=clamp(sr,PE0,PE1);return -(pitEdge(r,'o')+pitEdge(r,'i'))/2}
+  if(sr>=PX0&&sr<=PX1&&c.ring){return -(pitEdge(sr,'o')+pitEdge(sr,'i'))/2}
+  if(sr>PX1&&sr<PX1+60&&c.ring){const f=smooth01((sr-PX1)/55);return lerp(-PEDGE0,LINE[i]*.6,f)}
+  return LINE[i]*.6}
+function scUpdate(dt){
+  if(!G.race||G.mp)return;const N=TR.N;
+  const sc=SCS;
+  // the scripted crash: one mid-pack car loses it on a corner and hits the barrier
+  if(sc.plan&&!sc.plan.done&&sc.st==='none'){const a=AI[sc.plan.k];
+    if(a&&!a.crash&&!a.pit&&!a.fin&&a.s>=sc.plan.lap*N+sc.plan.i-45&&a.s<sc.plan.lap*N+sc.plan.i+60){a.crash=1;a.ct=0;a.cside=sc.plan.side;a.yawV=0}}
+  for(const a of AI)if(a.crash===2&&!sc.plan.done){sc.plan.done=true;sc.st='yellow';sc.t=0;
+    flash('Yellow flag','Sector '+(sc.sec+1)+' · car in the barrier','#f5d90a');flagBar('Yellow flag','Sector '+(sc.sec+1)+' · no overtaking, be ready to stop','blink')}
+  if(sc.st==='yellow'){sc.t+=dt;if(sc.t>=4.5){sc.st='pending';sc.t=0;scCreate();flash('Safety car','Deployed','#f5d90a');flagBar('Safety car','Keep behind the safety car · no overtaking','blink')}}
+  else if(sc.st==='pending'){sc.t+=dt;
+    let ls=S.lapOffset+S.q.prog,lv=Math.hypot(S.vx,S.vz);for(const a of AI)if(!a.crashed&&!a.crash&&a.s>ls){ls=a.s;lv=a.v}
+    const base=PX0-22,dr=(((base-ls)%N)+N)%N;
+    if((dr>250&&dr<720)||sc.t>26){sc.st='out';sc.el=0;const c=sc.car;
+      if(dr>250&&dr<720){c.s=ls+dr;c.ring=true}else{c.s=ls+150;c.d=0;c.v=Math.max(lv*.8,20);c.ring=false}}}
+  else if(sc.st==='out'||sc.st==='in'){const c=sc.car;sc.el+=dt;
+    const i=((Math.floor(c.s)%N)+N)%N;const srr=srOf(((c.s%N)+N)%N);let vt=Math.min(sc.st==='in'&&srr>PE0-40&&srr<PE1+20?24:SC_PACE,VTa[i]*.7);
+    if(c.v<vt)c.v+=Math.min(vt-c.v,8*dt);else c.v-=Math.min(c.v-vt,14*dt);
+    c.s+=c.v*dt/STEP;const dd=scDof(c);c.d+=clamp(dd-c.d,-6*dt,6*dt);c.spin+=c.v/META.wheels.FL.r*dt;aiPlace(c,dt);
+    if(sc.st==='out'){const pe=(((PE0-(((c.s%N)+N)%N))%N)+N)%N;
+      if(sc.el>=40&&pe>40&&pe<500){sc.st='in';flash('Safety car in','This lap','#f5d90a');flagBar('Safety car in this lap','Stay in formation until the line','blink')}}
+    else{const sr=srOf(((c.s%N)+N)%N);
+      if(sr>=PE0+8&&sr<PE1){sc.st='green';sc.t=0;flash('Green flag','Racing resumes','#19b34a');flagBar('Green flag','Racing resumes','green');sc.car.leave=true}}}
+  else if(sc.st==='green'){sc.t+=dt;const c=sc.car;
+    if(c){const sr=srOf((((c.s%N)+N)%N));c.v=Math.min(24,c.v+8*dt);c.s+=c.v*dt/STEP;const r=clamp(sr,PE0,PE1);c.d+=clamp(-(pitEdge(r,'o')+pitEdge(r,'i'))/2-c.d,-6*dt,6*dt);aiPlace(c,dt);if(sr>=PE1+6)sc.car=null}
+    if(sc.t>4){flagBar(null)}if(sc.t>5&&!sc.car){sc.st='done'}}
+  if(sc.car)sc.car.liv.accent=(Math.floor(G.t*4)%2)?[.95,.45,.02]:[.05,.05,.05];
+}
+
 function aiPlace(a,dt){const p0=trackXY(a.s,a.d),p1=trackXY(a.s+.8,a.d);a.x=p0[0];a.z=p0[1];
   const th=Math.atan2(p1[0]-p0[0],p1[1]-p0[1]);
   if(!dt){a.th=a.thT=th;a.delta=0;return}
@@ -803,8 +889,15 @@ function initAI(){AI.length=0;for(let k=0;k<NAI;k++)AI.push({liv:LIVERIES[k+1],c
 function resetAI(){AI.forEach((a,k)=>{if(a.mp)return;const g=GRID[k<PSLOT?k:k+1];a.s=g[0];a.d=g[1];a.v=0;a.spin=0;a.fin=false;a.finT=0;a.pit=0;a.ty=a.comp;aiPlace(a,0)})}
 function aiStep(dt){if(!G.race||!G.racing||G.mp)return;const N=TR.N;
   const pTot=S.lapOffset+S.q.prog,pV=Math.hypot(S.vx,S.vz);
+  const scOn=scActive();
   for(const a of AI){
     const i=((Math.floor(a.s)%N)+N)%N;
+    if(a.crash){ // scripted crash: lose the rear, slide to the barrier, tumble, stop
+      if(a.crash===1){a.ct+=dt;a.d+=a.cside*Math.min(9.5,3+a.ct*9)*dt;a.s+=a.v*dt/STEP;a.v=Math.max(0,a.v-4*dt);a.spin+=a.v/META.wheels.FL.r*dt;
+        const p0=trackXY(a.s,a.d),p1=trackXY(a.s+.8,a.d),thT=Math.atan2(p1[0]-p0[0],p1[1]-p0[1]);a.x=p0[0];a.z=p0[1];a.th=thT+a.cside*Math.min(.95,.55*a.ct);
+        if(a.cside*a.d>=WALL-1.7){a.d=a.cside*(WALL-1.7);a.crash=2;const vx=Math.sin(a.th)*a.v,vz=Math.cos(a.th)*a.v;crashStart(a,vx,vz,Math.max(14,a.v*.3),a.cside);a.yawV=a.crashYaw;a.cv=a.v;G.shake=Math.max(G.shake,.3)}}
+      else{a.v=Math.max(0,a.v-16*dt);a.s+=a.v*dt/STEP;const p0=trackXY(a.s,a.d);a.x=p0[0];a.z=p0[1];a.th+=a.yawV*dt;a.yawV*=Math.exp(-dt*1.6);a.spin+=a.v/META.wheels.FL.r*dt;crashStep(a,dt);if(a.v<=.05&&a.cr&&a.cr.rest)a.crashed=true}
+      continue}
     let vt=VTa[i]*a.skill*Math.min(1,Math.sqrt(tyreGrip(a.ty,W.wet)))*(1-.07*W.wet),td=LINE[i]*a.line;
     // ---- pit stops: swap to inters/wets when it rains (and back to slicks when it dries) ----
     let pd=null,pv=null;
@@ -821,6 +914,8 @@ function aiStep(dt){if(!G.race||!G.racing||G.mp)return;const N=TR.N;
       else if(a.pit===3){pv=0;pd=-(PL1-1.3);a.pt+=dt;if(a.pt>1.3)a.ty=a.want;if(a.pt>2.9)a.pit=4}
       else if(a.pit===4){const r=Math.min(Math.max(sr,PX0),PX1);pd=sr<PX0?-PLC:-(pitEdge(r,'o')+pitEdge(r,'i'))/2;pv=sr<PX1-25?22.2:null;if(sr>=PX1)a.pit=0}}
     vt*=clamp(1+(pTot-a.s)*STEP*.00012,.96,1.03);
+    if(SCS.st==='yellow'&&SCS.plan){const dr=(((SCS.plan.i-i)%N)+N)%N;if(dr<70||dr>N-14)vt=Math.min(vt,32)}
+    if(scOn&&a.pit<2){vt=Math.min(vt,scGapLimit(a.s,a,false))}
     if(a.fin){vt=Math.min(vt,38);td=5.3*a.side}
     const chk=(bt,bd,bv)=>{const ds=(bt-a.s)*STEP;if(ds>0&&ds<30&&Math.abs(bd-a.d)<2.4){
       vt=Math.min(vt,bv+Math.max(0,ds-7)*.9);
@@ -837,7 +932,7 @@ function aiStep(dt){if(!G.race||!G.racing||G.mp)return;const N=TR.N;
 function collide(){if(!G.race)return;
   const cs=(x,z,th)=>{const fx=Math.sin(th),fz=Math.cos(th);return [[x+fx*1.6,z+fz*1.6],[x,z],[x-fx*1.6,z-fz*1.6]]};
   const pc=cs(S.x,S.z,S.th),R=1.9;
-  for(const a of AI){const ex=S.x-a.x,ez=S.z-a.z;if(ex*ex+ez*ez>40)continue;
+  for(const a of (SCS.car?AI.concat([SCS.car]):AI)){if(a.crashed)continue;const ex=S.x-a.x,ez=S.z-a.z;if(ex*ex+ez*ez>40)continue;
     const ac=cs(a.x,a.z,a.th);
     for(const p of pc)for(const q of ac){let dx=p[0]-q[0],dz=p[1]-q[1],d=Math.hypot(dx,dz);
       if(d<R){if(d<1e-4){dx=1;dz=0;d=1}const nx=dx/d,nz=dz/d,pen=R-d;
@@ -848,7 +943,7 @@ function collide(){if(!G.race)return;
         if(vn<0){S.vx-=nx*vn*.6;S.vz-=nz*vn*.6;a.v=Math.max(0,a.v+(af[0]*nx+af[1]*nz)*vn*.4);
           if(vn<-2){S.hit=Math.max(S.hit,Math.min(1,-vn/15));G.shake=Math.max(G.shake,Math.min(.6,-vn/18))}}}}}}
 function standings(){const rows=[{name:DRV.name.toUpperCase(),you:true,tot:S.lapOffset+S.q.prog,fin:G.finished,finT:G.finT,v:Math.hypot(S.vx,S.vz),col:LIVERIES[0].paint}];
-  for(const a of AI)rows.push({name:a.liv.name.toUpperCase(),tot:a.s,fin:a.fin,finT:a.finT,v:a.v,col:a.liv.paint});
+  for(const a of AI)rows.push({name:a.liv.name.toUpperCase(),tot:a.s-(a.crash?1e6:0),fin:a.fin,finT:a.finT,v:a.v,col:a.liv.paint,dnf:!!a.crash});
   rows.sort((x,y)=>x.fin&&y.fin?x.finT-y.finT:x.fin?-1:y.fin?1:y.tot-x.tot);return rows}
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:Math.min(n%10,4)%4]||'th');
 function playerFinish(){if(G.mp)mpSend({t:'fin',time:G.t-G.goT});G.finished=true;G.cool=true;G.coolDone=0;G.finT=G.t-G.goT;G.finishAt=G.t;const p=standings().findIndex(r=>r.you)+1;
@@ -857,7 +952,7 @@ function finishRace(){G.resultShown=true;G.mode='result';const rows=standings(),
   const tm=rows.map(r=>r.fin?r.finT:now+Math.max(0,(LAPS*N-r.tot))*STEP/Math.max(r.v,35));
   const pos=rows.findIndex(r=>r.you)+1;
   let h='<tr><th>Pos</th><th>Driver</th><th>Time</th></tr>';
-  rows.forEach((r,i)=>{h+='<tr'+(r.you?' class="you"':'')+'><td>'+(i+1)+'</td><td><i style="background:'+rgb(r.col)+'"></i>'+r.name+'</td><td>'+(i===0?fmt(tm[i]):(r.fin?'':'~')+'+'+(tm[i]-tm[0]).toFixed(3))+'</td></tr>'});
+  rows.forEach((r,i)=>{h+='<tr'+(r.you?' class="you"':'')+'><td>'+(i+1)+'</td><td><i style="background:'+rgb(r.col)+'"></i>'+r.name+'</td><td>'+(r.dnf?'DNF':i===0?fmt(tm[i]):(r.fin?'':'~')+'+'+(tm[i]-tm[0]).toFixed(3))+'</td></tr>'});
   $('resTbl').innerHTML=h;
   showOverlay('result',{title:pos===1?'Victory':ordinal(pos)+' place',text:LAPS+' laps \u00b7 your time '+fmt(G.finT)+(G.best!=null?' \u00b7 best lap '+fmt(G.best):'')})}
 
@@ -973,8 +1068,10 @@ $('goDrv').addEventListener('click',openDriver);
 
 const DT=1/120;
 function step(dt){
+  if(G.racing)scUpdate(dt);
   aiStep(dt);
   if(!G.racing){S.vx=S.vz=0;S.yaw=0;S.ax=S.ay=0;S.rpm=S.rpm;G.t+=dt;S.q=query(S.x,S.z,S.hint);G.prevProg=S.q.prog;return}
+  if(S.wreck){wreckStep(dt);return}
   if(G.pit){S.vx=S.vz=0;S.yaw=0;S.ax=S.ay=0;S.skid=0;pitLogic(dt,0);G.t+=dt;lapLogic();return}
   const f0=[Math.sin(S.th),Math.cos(S.th)],l0=[Math.cos(S.th),-Math.sin(S.th)];
   let u=S.vx*f0[0]+S.vz*f0[1];
@@ -1004,6 +1101,7 @@ function step(dt){
   let un=u+a*dt;
   if(u>0&&un<0&&!(brk>0&&u<=.6))un=0;else if(u<0&&un>0&&thr<=0)un=0;
   u=un;if(S.limit&&u>22.2)u=Math.max(22.2,u-30*dt);
+  else if(scActive()&&!S.lane&&G.race){const sl=scGapLimit(S.lapOffset+S.q.prog,null,true);if(u>sl){u=Math.max(sl,u-(S.lapOffset>0?34:30)*dt);S.scl=1}else S.scl=0}
   S.ax=a;
   // lateral grip
   const rem=Math.min(Math.abs(vl),maxLat*dt);S.ay=-Math.sign(vl)*rem/dt;vl-=Math.sign(vl)*rem;
@@ -1019,7 +1117,8 @@ function step(dt){
     const vn=S.vx*nx+S.vz*nz;
     if(vn>0){S.vx-=nx*vn*1.12;S.vz-=nz*vn*1.12;const k=1-Math.min(.4,vn/55);S.vx*=k;S.vz*=k;
       const tt=TR.t[S.q.i],thT=Math.atan2(tt[0],tt[1]);let dd=angDiff(thT,S.th);if(Math.abs(dd)>Math.PI/2)dd=angDiff(thT+Math.PI,S.th);S.th+=dd*.3;S.yaw*=.4;
-      if(vn>2){S.hit=Math.min(1,vn/20);G.shake=Math.max(G.shake,Math.min(1,vn/15))}}
+      if(vn>2){S.hit=Math.min(1,vn/20);G.shake=Math.max(G.shake,Math.min(1,vn/15))}
+      if(vn>15&&G.racing&&!G.finished&&!S.wreck&&!G.pit){S.wreck={t:0,yawV:0};crashStart(S,S.vx+nx*vn,S.vz+nz*vn,vn,side);S.wreck.yawV=S.crashYaw;G.shake=1;S.hit=1;flash('Crash','Press R to rejoin','var(--signal)')}}
     S.q=query(S.x,S.z,S.hint);S.hint=S.q.i;
   }
   collide();pitLogic(dt,u);
@@ -1032,6 +1131,18 @@ function step(dt){
   G.t+=dt;
   lapLogic();
 }
+
+function wreckStep(dt){
+  const w=S.wreck;w.t+=dt;G.t+=dt;
+  const sp=Math.hypot(S.vx,S.vz),air=S.lift>.12,dec=Math.min(sp,(air?1.2:(S.cr&&S.cr.rest?30:12))*dt);
+  if(sp>0){S.vx-=S.vx/sp*dec;S.vz-=S.vz/sp*dec}
+  S.x+=S.vx*dt;S.z+=S.vz*dt;S.th+=w.yawV*dt;w.yawV*=Math.exp(-dt*(air?.3:1.6));
+  S.q=query(S.x,S.z,S.hint);S.hint=S.q.i;
+  const bw=pitUpdate(S.q);if(S.q.d<bw[0]||S.q.d>bw[1]){const side=S.q.d<bw[0]?-1:1,pen=side<0?bw[0]-S.q.d:S.q.d-bw[1],nl=TR.l[S.q.i],nx=nl[0]*side,nz=nl[1]*side;
+    S.x-=nx*(pen+.02);S.z-=nz*(pen+.02);const vn=S.vx*nx+S.vz*nz;if(vn>0){S.vx-=nx*vn*1.3;S.vz-=nz*vn*1.3}S.q=query(S.x,S.z,S.hint);S.hint=S.q.i}
+  crashStep(S,dt);S.skid=0;S.spin+=sp/META.wheels.FL.r*dt;S.hit*=Math.exp(-dt*4);S.yaw=0;S.steer=0;S.ax=S.ay=0;
+  lapLogic();
+  if(w.t>7)resetToTrack()}
 function lapLogic(){
   const N=TR.N,p=S.q.prog,pp=G.prevProg;
   const fwd=(a,b,m)=>a<m&&b>=m&&(b-a)<N/2;
@@ -1109,6 +1220,8 @@ function buildMap(){let mnx=1e9,mxx=-1e9,mnz=1e9,mxz=-1e9;for(const c of TR.c){m
   const s0=mapT(TR.c[0][0],TR.c[0][1]);c.fillStyle='#ffd23f';c.fillRect(s0[0]-9,s0[1]-3,18,6)}
 function drawMap(){if(!mapBase)return;mctx.clearRect(0,0,mapCv.width,mapCv.height);mctx.drawImage(mapBase,0,0);
   if(G.race)for(const a of AI){const q=mapT(a.x,a.z);mctx.fillStyle=rgb(a.liv.paint);mctx.strokeStyle='#fff';mctx.lineWidth=1.5;mctx.beginPath();mctx.arc(q[0],q[1],4.5,0,7);mctx.fill();mctx.stroke()}
+  if(G.race&&SCS.car){const q=mapT(SCS.car.x,SCS.car.z);mctx.fillStyle='#f5d90a';mctx.strokeStyle='#111';mctx.lineWidth=2;mctx.beginPath();mctx.arc(q[0],q[1],6,0,7);mctx.fill();mctx.stroke()}
+  if(G.race&&(SCS.st==='yellow'||scActive())&&SCS.plan){const t=TR.c[SCS.plan.i],q=mapT(t[0],t[1]);mctx.fillStyle='#f5d90a';mctx.beginPath();mctx.moveTo(q[0],q[1]-10);mctx.lineTo(q[0]+9,q[1]+6);mctx.lineTo(q[0]-9,q[1]+6);mctx.closePath();mctx.fill()}
   const p=mapT(S.x,S.z);mctx.fillStyle='#ff3b47';mctx.strokeStyle='#fff';mctx.lineWidth=3;mctx.beginPath();mctx.arc(p[0],p[1],9,0,7);mctx.fill();mctx.stroke()}
 
 /* ---------- input ---------- */
@@ -1145,7 +1258,7 @@ function showOverlay(kind,info){$('trkRow').hidden=kind!=='menu';$('overlay').hi
 function setPause(p){if(G.mp){if(p)showOverlay('pause');else $('overlay').hidden=true;return}G.paused=p;if(p)showOverlay('pause');else $('overlay').hidden=true}
 function setupGrid(){const N=TR.N;S.lapOffset=-N;S.justCrossed=false;
   if(G.race){const g=GRID[G.mp?G.mpSlot:PSLOT];placeCar(N+g[0],g[1]);resetAI()}else placeCar(N-6,0)}
-function toMenu(keep){if(G.mp){if(!keep)mpLeave();G.mp=false;LAPS=5;initAI()}wxReset();G.pit=null;S.lane=false;S.limit=false;$('tyreSel').hidden=true;$('garage').hidden=true;$('pitMenu').hidden=true;G.mode='menu';G.paused=false;G.racing=false;G.finished=false;G.resultShown=false;G.race=true;G.t=0;G.lapActive=false;
+function toMenu(keep){scReset();if(G.mp){if(!keep)mpLeave();G.mp=false;LAPS=10;initAI()}wxReset();G.pit=null;S.lane=false;S.limit=false;$('tyreSel').hidden=true;$('garage').hidden=true;$('pitMenu').hidden=true;G.mode='menu';G.paused=false;G.racing=false;G.finished=false;G.resultShown=false;G.race=true;G.t=0;G.lapActive=false;
   setupGrid();G.camYaw=S.th;S.rpm=4200;$('lights').classList.remove('on');$('posRow').hidden=false;showOverlay('menu');if(keep)mpOpen()}
 
 /* ---------- camera + render ---------- */
@@ -1225,17 +1338,18 @@ function render(dt,cm){
   // cars (player + rivals)
   const cars=[{c:S,liv:LIVERIES[0],you:true,d2:0}];
   if(G.race&&G.mode!=='garage')for(const a of AI){const dx=a.x-camEye[0],dz=a.z-camEye[2],d2=dx*dx+dz*dz;if(d2<400*400&&(d2<900||dx*cm.la.fwd[0]+dz*cm.la.fwd[2]>-6))cars.push({c:a,liv:a.liv,d2})}
+  if(SCS.car&&G.race){const a=SCS.car,dx=a.x-camEye[0],dz=a.z-camEye[2];cars.push({c:a,liv:a.liv,d2:dx*dx+dz*dz})}
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.uniform1f(P.u.uMode,1);
   setAttr(shadowQuad,false);gl.bindBuffer(gl.ARRAY_BUFFER,shadowQuad.bc);gl.enableVertexAttribArray(A.col);gl.vertexAttribPointer(A.col,3,gl.FLOAT,false,0,0);
   for(const o of cars){gl.uniformMatrix4fv(P.u.uModel,false,mul(trans(o.c.x,0,o.c.z),rotY(o.c.th)));gl.drawArrays(gl.TRIANGLES,0,6)}
   gl.uniform1f(P.u.uMode,0);gl.depthMask(true);gl.disable(gl.BLEND);
   gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);gl.uniform1f(P.u.uQuant,1);gl.uniform1f(P.u.uNoise,0);
-  for(const o of cars)drawCarFull(o.you&&G.cam===1?{x:S.x,z:S.z,th:S.th,roll:0,pitch:0,spin:S.spin,delta:S.delta}:o.c,o.liv,o.d2>90*90);
+  for(const o of cars)drawCarFull(o.you&&G.cam===1&&!S.wreck?{x:S.x,z:S.z,th:S.th,roll:0,pitch:0,spin:S.spin,delta:S.delta}:o.c,o.liv,o.d2>90*90);
 }
 function drawCarFull(c,liv,lod){
   const bodyM=mul(trans(c.x,(c.lift||0)+(c.kb||0),c.z),mul(rotY(c.th),mul(rotZ(c.roll||0),rotX(c.pitch||0))));
   for(const p of car.body){if(lod&&p.lod)continue;drawPrim(p,bodyM,liv)}
-  for(const w of ['FL','FR','RL','RR']){const wd=META.wheels[w];let m=mul(bodyM,trans(wd.c[0],wd.c[1],wd.c[2]));if(wd.front)m=mul(m,rotY(c.delta||0));m=mul(m,rotX(c.spin||0));
+  for(const w of ['FL','FR','RL','RR']){const wd=META.wheels[w];let m;const dw=c.det&&c.det[w];if(dw){m=mul(trans(dw.x,dw.y,dw.z),mul(rotY(dw.ry||0),rotX(dw.sp||0)))}else{m=mul(bodyM,trans(wd.c[0],wd.c[1],wd.c[2]));if(wd.front)m=mul(m,rotY(c.delta||0));m=mul(m,rotX(c.spin||0))}
     for(const p of car.wheels[w])drawPrim(p,m,liv)}
   
   gl.enable(gl.BLEND);gl.depthMask(false);for(const p of car.glass)drawPrim(p,bodyM,liv);gl.depthMask(true);gl.disable(gl.BLEND);
@@ -1307,7 +1421,7 @@ function startRace(race){
   G.race=!!race;G.finished=false;G.cool=false;G.coolDone=0;G.resultShown=false;G.goT=0;G.finT=0;
   setupGrid();skidClear();
   G.camYaw=S.th;S.rpm=4200;updateSectors();$('lights').classList.add('on');$('overlay').hidden=true;$('posRow').hidden=!G.race;
-  S.wear=0;S.lane=false;S.limit=false;S.lift=0;S.pl0=-100;G.pit=null;LIVERIES[0].tyre=TY[S.tyre].c;$('pitMenu').hidden=true;aiStart();
+  S.wear=0;S.lane=false;S.limit=false;S.lift=0;S.pl0=-100;G.pit=null;LIVERIES[0].tyre=TY[S.tyre].c;$('pitMenu').hidden=true;aiStart();scReset();scPlan();
 }
 function act(a){if(!AC)audioStart();if(AC&&AC.state==='suspended')AC.resume();
   if(a==='race'){if(G.mp)toMenu(true);else openTyres(true)}else if(a==='ta')openTyres(false);else if(a==='resume')setPause(false);else if(a==='menu')toMenu()}
@@ -1326,7 +1440,7 @@ function mpRender(){const inRoom=!!(MP.ws&&MP.code);$('mpHome').hidden=inRoom;$(
   if(!inRoom)return;$('mpCodeShow').textContent=MP.code;
   const t=TRACKS.find(x=>x.id===MP.track);$('mpTrack').textContent=(t?t.name:MP.track)+' · '+MP.laps+' laps';
   $('mpList').innerHTML=MP.players.map(p=>'<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)"><i style="width:14px;height:14px;border-radius:50%;background:'+esc(p.liv[0])+';border:2px solid '+esc(p.liv[1])+'"></i><b>'+esc(p.drv||p.name)+'</b><span style="opacity:.6">#'+p.num+' '+esc(p.tag)+'</span><span style="margin-left:auto;opacity:.7">'+(p.host?'host':'')+(p.id===MP.id?' (you)':'')+'</span></div>').join('');
-  $('mpCfg').hidden=!MP.host;$('mpStart').hidden=!MP.host;$('mpStart').disabled=MP.status!=='lobby';$('mpLaps').value=String(MP.laps)}
+  $('mpCfg').hidden=false;$('mpStart').hidden=!MP.host;$('mpStart').disabled=MP.status!=='lobby'}
 function mpConnect(code,create){
   if(!ACC.user){mpMsg('Sign in with an account to play online (guests cannot join rooms).');return}
   code=(code||'').toUpperCase();if(!/^[A-Z0-9]{4}$/.test(code)){mpMsg('Enter the 4-letter room code');return}
@@ -1385,7 +1499,6 @@ $('mpJoin').addEventListener('click',()=>mpConnect($('mpCode').value.trim(),fals
 $('mpCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('mpJoin').click()});
 $('mpLeave').addEventListener('click',()=>{mpLeave();mpMsg('');mpRender()});
 $('mpStart').addEventListener('click',()=>{mpSend({t:'start'})});
-$('mpLaps').addEventListener('change',()=>mpSend({t:'cfg',laps:+$('mpLaps').value}));
 
 /* ---------- boot ---------- */
 async function boot(){try{const r=await fetch('/api/me'),j=await r.json();if(j.user){lsSet('f1-last',j.user);ACC.admin=!!j.isAdmin;return loggedIn(j.user,false,j.profile)}if(j.banned)return showLogin(banMsg(j))}catch(e){}showLogin()}
@@ -1394,7 +1507,7 @@ try{
   loadModel();initAtlas();initMeshes();initGround();skidInit();buildMap();resize();
   trkInit();initAI();G.race=true;setupGrid();G.camYaw=S.th;G.cam=0;showOverlay('menu');boot();
 }catch(err){console.error(err);$('sub').textContent='Could not start: '+err.message}
-window.__apex={W,DRV,TY,S,G,inp,TR,step,query,startRace,keys,AI,LAPS,VTa,LINE,BRAKE,standings,skidBuf,skidUpdate,LIVERIES,toMenu};
+window.__apex={SCS,scPlan,crashStart,resetToTrack,srOf,W,DRV,TY,S,G,inp,TR,step,query,startRace,keys,AI,LAPS,VTa,LINE,BRAKE,standings,skidBuf,skidUpdate,LIVERIES,toMenu};
 requestAnimationFrame(frame);
 })();
 </script>
