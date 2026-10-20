@@ -73,6 +73,18 @@ export default {
       if (o && o !== url.origin) return json({ error: 'Bad origin' }, 403);
     }
     try {
+      /* ---------- multiplayer rooms (WebSocket -> Durable Object) ---------- */
+      if (p === '/api/room') {
+        if (req.headers.get('upgrade') !== 'websocket') return json({ error: 'WebSocket required' }, 426);
+        const o = req.headers.get('origin'); if (o && o !== url.origin) return json({ error: 'Bad origin' }, 403);
+        const u = await userFromSession(req, env);
+        if (!u) return json({ error: 'Sign in to play online' }, 401);
+        if (banInfo(u)) return json({ error: 'banned' }, 403);
+        const code = (url.searchParams.get('code') || '').toUpperCase();
+        if (!/^[A-Z0-9]{4}$/.test(code)) return json({ error: 'Bad room code' }, 400);
+        const h = new Headers(req.headers); h.set('x-f1-user', u.username);
+        return env.ROOM.get(env.ROOM.idFromName(code)).fetch(new Request(req.url, { headers: h }));
+      }
       let body = {};
       if (m !== 'GET' && m !== 'HEAD') { try { body = await req.json(); } catch { body = {}; } }
 
@@ -211,3 +223,85 @@ export default {
     }
   }
 };
+
+
+/* ---------- Durable Object: one race lobby / room ---------- */
+const MAXP = 10;
+const num = (v, lo, hi, d) => { v = +v; return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
+const hexOk = c => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)) ? c : '#888888';
+export class Room {
+  constructor(state, env) {
+    this.players = new Map(); this.track = 'apex'; this.laps = 5; this.status = 'lobby'; this.nextId = 1; this.timer = null; this.raceSeq = 0;
+  }
+  hostId() { let m = Infinity; for (const id of this.players.keys()) if (id < m) m = id; return m; }
+  send(p, o) { try { p.ws.send(JSON.stringify(o)); } catch (e) {} }
+  all(o, except) { const s = JSON.stringify(o); for (const p of this.players.values()) if (p.id !== except) { try { p.ws.send(s); } catch (e) {} } }
+  lobby() {
+    const h = this.hostId();
+    this.all({ t: 'lobby', track: this.track, laps: this.laps, status: this.status,
+      players: [...this.players.values()].map(p => ({ id: p.id, name: p.name, drv: p.drv, tag: p.tag, num: p.num, liv: p.liv, host: p.id === h })) });
+  }
+  endRace() {
+    clearTimeout(this.timer); this.timer = null; if (this.status !== 'racing') return;
+    this.status = 'lobby';
+    const res = [...this.players.values()].filter(p => p.fin != null).sort((a, b) => a.fin - b.fin).map(p => ({ id: p.id, name: p.drv || p.name, time: p.fin }));
+    this.all({ t: 'end', results: res }); this.lobby();
+  }
+  checkEnd() { if (this.status === 'racing' && [...this.players.values()].every(p => p.fin != null)) this.endRace(); }
+  async fetch(req) {
+    if (req.headers.get('upgrade') !== 'websocket') return new Response('WebSocket only', { status: 426 });
+    const url = new URL(req.url), user = req.headers.get('x-f1-user') || 'Driver';
+    const create = url.searchParams.get('create') === '1', trk = (url.searchParams.get('track') || 'apex');
+    const pair = new WebSocketPair(), client = pair[0], server = pair[1];
+    server.accept();
+    const refuse = msg => { try { server.send(JSON.stringify({ t: 'err', msg })); server.close(1000, 'refused'); } catch (e) {} return new Response(null, { status: 101, webSocket: client }); };
+    if (!create && this.players.size === 0) return refuse('Room not found. Check the code.');
+    if (this.status !== 'lobby') return refuse('A race is in progress. Try again when it ends.');
+    // same account joining again replaces the old connection
+    for (const q of this.players.values()) if (q.name === user) { this.players.delete(q.id); try { q.ws.close(1000, 'replaced'); } catch (e) {} }
+    if (this.players.size >= MAXP) return refuse('Room is full (10 players).');
+    if (this.players.size === 0) { this.track = /^[a-z]{3,12}$/.test(trk) ? trk : 'apex'; this.laps = 5; }
+    const me = { id: this.nextId++, name: user, drv: user, tag: 'DRI', num: 7, liv: ['#0d1f6b', '#e11b22', '#d4a937'], ws: server, fin: null, last: 0 };
+    this.players.set(me.id, me);
+    this.send(me, { t: 'hello', id: me.id, now: Date.now() });
+    this.lobby();
+    server.addEventListener('message', ev => {
+      if (typeof ev.data !== 'string' || ev.data.length > 700) return;
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (!this.players.has(me.id)) return;
+      switch (m.t) {
+        case 's': {
+          if (this.status !== 'racing' || !Array.isArray(m.a) || m.a.length !== 8) return;
+          const a = m.a.map(Number); if (!a.every(Number.isFinite)) return;
+          this.all({ t: 's', id: me.id, a }, me.id); break;
+        }
+        case 'ping': this.send(me, { t: 'pong', c: num(m.c, 0, 1e15, 0), now: Date.now() }); break;
+        case 'hi':
+          me.drv = String(m.drv || me.name).slice(0, 22); me.tag = String(m.tag || 'DRI').replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || 'DRI';
+          me.num = num(m.num, 1, 99, 7); me.liv = Array.isArray(m.liv) && m.liv.length === 3 ? m.liv.map(hexOk) : me.liv; this.lobby(); break;
+        case 'cfg': if (me.id === this.hostId() && this.status === 'lobby') { this.laps = Math.round(num(m.laps, 1, 20, 5)); this.lobby(); } break;
+        case 'start':
+          if (me.id !== this.hostId() || this.status !== 'lobby') return;
+          this.status = 'racing'; this.raceSeq++;
+          for (const q of this.players.values()) q.fin = null;
+          this.all({ t: 'go', at: Date.now() + 10000, now: Date.now(), grid: [...this.players.keys()].sort((x, y) => x - y), laps: this.laps, wx: Math.random() });
+          this.lobby(); clearTimeout(this.timer); this.timer = setTimeout(() => this.endRace(), 25 * 60e3); break;
+        case 'fin': {
+          if (this.status !== 'racing' || me.fin != null) return;
+          me.fin = num(m.time, 1, 36000, 36000); this.all({ t: 'fin', id: me.id, time: me.fin });
+          if (![...this.players.values()].some(q => q !== me && q.fin != null)) { clearTimeout(this.timer); this.timer = setTimeout(() => this.endRace(), 90e3); }
+          this.checkEnd(); break;
+        }
+        case 'leave': try { server.close(1000, 'bye'); } catch (e) {} break;
+      }
+    });
+    const gone = () => {
+      if (this.players.get(me.id) !== me) return;
+      this.players.delete(me.id);
+      if (this.players.size === 0) { clearTimeout(this.timer); this.timer = null; this.status = 'lobby'; return; }
+      this.all({ t: 'drop', id: me.id }); this.lobby(); this.checkEnd();
+    };
+    server.addEventListener('close', gone); server.addEventListener('error', gone);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+}
