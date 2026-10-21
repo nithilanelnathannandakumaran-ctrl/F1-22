@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e10600'/%3E%3Cpath d='M-4 52 L40 10 L52 10 L8 52Z' fill='%230b0d14' opacity='.9'/%3E%3Cpath d='M14 58 L58 16 L64 16 L64 22 L20 58Z' fill='%230b0d14' opacity='.9'/%3E%3Ctext x='33' y='45' text-anchor='middle' font-family='Arial Black%2CImpact%2Csans-serif' font-weight='900' font-style='italic' font-size='34' fill='%23fff' stroke='%230b0d14' stroke-width='2.4' paint-order='stroke' transform='skewX%28-8%29' %3E22%3C/text%3E%3C/svg%3E"></head><body>
 <title>F1 22</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -97,6 +97,28 @@ body{touch-action:none;-webkit-user-select:none;user-select:none}
 .tc .tm b{color:#c77dff;font-weight:600}
 .tc .ttag{position:absolute;top:8px;left:8px;background:var(--signal,#e10600);color:#111;font:700 11px var(--display);letter-spacing:.12em;padding:3px 7px;text-transform:uppercase}
 .tcw{position:relative;display:block}
+
+/* championship */
+#champ{padding:0;align-items:stretch;justify-content:stretch;background:radial-gradient(ellipse at 15% 0%,rgba(225,6,0,.3),transparent 55%),repeating-linear-gradient(45deg,rgba(255,255,255,.025) 0 2px,transparent 2px 6px),linear-gradient(180deg,#0b0d14,#05060a)}
+.chcard{width:100%;height:100%;box-sizing:border-box;padding:clamp(12px,2.4vh,26px) clamp(14px,4vw,56px);overflow:auto;display:flex;flex-direction:column;gap:14px}
+.chhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px 26px}
+.chhead h1{margin:0;font:900 italic clamp(34px,7vh,64px)/.95 var(--display);text-transform:uppercase}.chhead h1 em{font-style:normal;color:var(--signal,#e10600)}
+.chsub{flex:1;min-width:160px;color:var(--dim);font-size:15px}
+.chwrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:26px;align-items:start}
+@media(max-width:900px){.chwrap{grid-template-columns:1fr}}
+.chh{font:700 13px var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+.chtbl td:last-child,.chtbl th:last-child{text-align:right}
+.chtbl tr.top td:first-child{color:#ffd23f}
+.chtbl td.cr{color:#ffd23f}
+.rd{display:flex;align-items:center;gap:12px;padding:8px 12px;border-left:3px solid var(--line);background:rgba(255,255,255,.04);margin-bottom:6px;font-size:15px}
+.rd b{font:700 14px var(--mono);width:26px;color:var(--dim)}
+.rd .nm{flex:1;min-width:0}.rd .nm small{display:block;color:var(--dim);font-size:12px}
+.rd .st{font:700 13px var(--mono);letter-spacing:.04em;text-align:right}
+.rd.done{border-left-color:#19b34a}.rd.next{border-left-color:var(--signal,#e10600);background:rgba(225,6,0,.16)}.rd.lock{opacity:.45}
+.tc.lock{opacity:.5;cursor:not-allowed}.tc.lock:hover{transform:none;border-color:var(--line)}
+.tc.lock canvas{filter:grayscale(1) brightness(.6)}
+.tc .lk{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:700 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:#fff;text-align:center;padding:0 10px}
+.tc .lk i{font-style:normal;font-size:30px}
 .overlay.pod{justify-content:flex-end !important;background:linear-gradient(90deg,rgba(8,13,26,0) 35%,rgba(8,13,26,.92)) !important}
 .flagbar{position:absolute;left:50%;top:max(74px,calc(env(safe-area-inset-top,0px) + 74px));transform:translateX(-50%);padding:8px 22px;border-radius:3px;background:#f5d90a;color:#111;font:900 italic 22px var(--display);letter-spacing:.08em;text-transform:uppercase;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.5);pointer-events:none;z-index:4}
 .flagbar small{display:block;font:600 12px var(--mono);letter-spacing:.04em;text-transform:none;margin-top:2px}
@@ -263,7 +285,7 @@ button.go:hover:not(:disabled){filter:brightness(1.18)}
       <dt>R</dt><dd>Put the car back on the track</dd>
       <dt>Pit lane</dt><dd>Steer left into the pit entry, pull into your box beside the lane (80 km/h limit), pick tyres (1-5)</dd>
     </dl>
-    <div class="btns"><button class="go" id="goRace" disabled>Loading&hellip;</button><button class="go alt" id="goTA" disabled>Time attack</button><button class="go alt" id="goLiv">Livery</button><button class="go alt" id="goDrv">Driver</button><button class="go alt" id="goMP">Multiplayer</button></div>
+    <div class="btns"><button class="go" id="goRace" disabled>Loading&hellip;</button><button class="go alt" id="goTA" disabled>Time attack</button><button class="go alt" id="goLiv">Livery</button><button class="go alt" id="goDrv">Driver</button><button class="go alt" id="goCh">Championship</button><button class="go alt" id="goMP">Multiplayer</button></div>
     <div class="btns" id="lapRow" style="margin-top:10px;align-items:center"><label class="fld" style="margin:0;display:flex;align-items:center;gap:10px">Race laps <input id="lapsIn" type="number" min="1" max="100" value="10" style="width:84px"></label><span class="sub" style="margin:0">1 to 100</span></div>
     <div class="btns" id="trkRow" style="margin-top:10px"></div>
     <div id="trkGrid" hidden></div>
@@ -277,6 +299,10 @@ button.go:hover:not(:disabled){filter:brightness(1.18)}
 <div class="pick"><label>Primary<input type="color" id="cPri"></label><label>Secondary<input type="color" id="cSec"></label><label>Rims<input type="color" id="cRim"></label></div>
 <div class="presets" id="presets"></div><p style="margin:0 0 8px">Design</p><div class="designs" id="designs"></div><div class="btns"><button class="go" id="garDone">Done</button></div></div></div>
 <div class="overlay" id="tyreSel" hidden><div class="card panel"><h1>Pick <em>tyres</em></h1><p id="tsInfo"></p><div class="tyres" id="tsBtns"></div><div class="sub fine">Keys 1-5 also work. Conditions change every 1:30, so you can pit to swap.</div></div></div>
+<div class="overlay" id="champ" hidden style="z-index:7"><div class="chcard">
+  <div class="chhead"><h1>Champion<em>ship</em></h1><div class="chsub" id="chSub"></div><div class="btns"><button class="go" id="chGo">Start</button><button class="go alt" id="chNew" hidden>New season</button><button class="go alt" id="chBack">Back</button></div></div>
+  <div class="chwrap"><div><div class="chh">Drivers' standings</div><table class="res chtbl" id="chTbl"></table></div>
+  <div><div class="chh">Calendar</div><div id="chCal"></div></div></div></div></div>
 <div class="overlay" id="mp" hidden style="z-index:8"><div class="card panel"><h1>Race <em>online</em></h1>
 <p id="mpInfo">Race your friends. One person creates a room and shares the 4-letter code.</p>
 <div id="mpHome"><div class="btns"><button class="go" id="mpCreate">Create room</button></div>
@@ -350,7 +376,16 @@ float dmask(vec3 p,float d){float x=p.x,z=p.z,m=0.;
  else if(d<5.5)m=1.-smoothstep(.0,.02,abs(fract(z/.85)-.5)-.2);   // hoops
  else if(d<6.5)m=mod(floor(x/.2)+floor(z/.2),2.);                 // checker
  else if(d<7.5)m=smoothstep(-1.4,1.9,z);                          // fade to nose
- else m=1.-smoothstep(.0,.03,abs(z-x*1.9+.3)-.22);                // diagonal slash
+ else if(d<8.5)m=1.-smoothstep(.0,.03,abs(z-x*1.9+.3)-.22);        // diagonal slash
+ else if(d<9.5)m=1.-smoothstep(.0,.015,abs(fract(x/.13)-.5)-.12);   // pinstripes
+ else if(d<10.5)m=1.-smoothstep(.0,.03,abs(fract((z+x*1.3)/.75)-.5)-.2);   // diagonal bands
+ else if(d<11.5)m=1.-smoothstep(.0,.03,length(fract(vec2(x,z)/.24)-.5)-.28);   // dots
+ else if(d<12.5)m=smoothstep(.48,.52,vn(vec2(x,z)*3.4)*.6+vn(vec2(x,z)*9.)*.4);   // camo
+ else if(d<13.5)m=1.-smoothstep(.0,.03,p.y-(.2+(.5+.5*sin(z*10.))*.5*(.6+.4*sin(z*3.))));   // flames
+ else if(d<14.5)m=1.-smoothstep(.0,.03,abs(fract((x+sin(z*5.)*.12)/.3)-.5)-.15);   // waves
+ else if(d<15.5)m=1.-smoothstep(.0,.03,abs(fract(z/.5+abs(fract(x/.3)-.5)*1.3)-.5)-.2);   // zigzag
+ else if(d<16.5)m=smoothstep(-.8,.8,x);                            // side fade
+ else m=smoothstep(2.0,-2.2,z);                                    // fade to rear
  return m;}
 void main(){
  if(uMode>2.5){float r=length(vC.xy);float a=pow(1.-clamp(r,0.,1.),1.5)*uMat.w;gl_FragColor=vec4(uMatCol,a);return;}
@@ -1192,8 +1227,8 @@ function collide(){if(!G.race)return;
         const vn=(S.vx-a.v*af[0])*nx+(S.vz-a.v*af[1])*nz;
         if(vn<0){S.vx-=nx*vn*.6;S.vz-=nz*vn*.6;a.v=Math.max(0,a.v+(af[0]*nx+af[1]*nz)*vn*.4);
           if(vn<-2){S.hit=Math.max(S.hit,Math.min(1,-vn/15));G.shake=Math.max(G.shake,Math.min(.6,-vn/18))}}}}}}
-function standings(){const rows=[{name:DRV.name.toUpperCase(),you:true,tot:S.lapOffset+S.q.prog,fin:G.finished,finT:G.finT,v:Math.hypot(S.vx,S.vz),col:LIVERIES[0].paint,liv:LIVERIES[0]}];
-  for(const a of AI)rows.push({name:a.liv.name.toUpperCase(),tot:a.s-(a.crash?1e6:0),fin:a.fin,finT:a.finT,v:a.v,col:a.liv.paint,dnf:!!a.crash,liv:a.liv});
+function standings(){const rows=[{name:DRV.name.toUpperCase(),you:true,tot:S.lapOffset+S.q.prog,fin:G.finished,finT:G.finT,v:Math.hypot(S.vx,S.vz),col:LIVERIES[0].paint,liv:LIVERIES[0],idx:0}];
+  for(const a of AI)rows.push({name:a.liv.name.toUpperCase(),tot:a.s-(a.crash?1e6:0),fin:a.fin,finT:a.finT,v:a.v,col:a.liv.paint,dnf:!!a.crash,liv:a.liv,idx:AI.indexOf(a)+1});
   rows.sort((x,y)=>x.fin&&y.fin?x.finT-y.finT:x.fin?-1:y.fin?1:y.tot-x.tot);return rows}
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:Math.min(n%10,4)%4]||'th');
 function playerFinish(){if(G.mp)mpSend({t:'fin',time:G.t-G.goT});G.finished=true;G.cool=true;G.coolDone=0;G.finT=G.t-G.goT;G.finishAt=G.t;const p=standings().findIndex(r=>r.you)+1;
@@ -1201,11 +1236,13 @@ function playerFinish(){if(G.mp)mpSend({t:'fin',time:G.t-G.goT});G.finished=true
 function finishRace(){G.resultShown=true;G.mode='result';const rows=standings(),now=G.t-G.goT,N=TR.N;
   const tm=rows.map(r=>r.fin?r.finT:now+Math.max(0,(LAPS*N-r.tot))*STEP/Math.max(r.v,35));
   const pos=rows.findIndex(r=>r.you)+1;
-  let h='<tr><th>Pos</th><th>Driver</th><th>Time</th></tr>';
-  rows.forEach((r,i)=>{h+='<tr'+(r.you?' class="you"':'')+'><td>'+(i+1)+'</td><td><i style="background:'+rgb(r.col)+'"></i>'+r.name+'</td><td>'+(r.dnf?'DNF':i===0?fmt(tm[i]):(r.fin?'':'~')+'+'+(tm[i]-tm[0]).toFixed(3))+'</td></tr>'});
+  const cr=G.champ&&G.race&&!G.mp?chRecord(rows):null;
+  let h='<tr><th>Pos</th><th>Driver</th><th>Time</th>'+(cr?'<th>Pts</th>':'')+'</tr>';
+  rows.forEach((r,i)=>{h+='<tr'+(r.you?' class="you"':'')+'><td>'+(i+1)+'</td><td><i style="background:'+rgb(r.col)+'"></i>'+r.name+'</td><td>'+(r.dnf?'DNF':i===0?fmt(tm[i]):(r.fin?'':'~')+'+'+(tm[i]-tm[0]).toFixed(3))+'</td>'+(cr?'<td class="cr">+'+cr.res[i].pts+'</td>':'')+'</tr>'});
   $('resTbl').innerHTML=h;
   if(G.race&&!G.mp&&rows.length>=3){FX.length=0;G.pod={t:0,top:rows.slice(0,3)};$('overlay').classList.add('pod')}
-  showOverlay('result',{title:pos===1?'Victory':ordinal(pos)+' place',text:LAPS+' laps \u00b7 your time '+fmt(G.finT)+(G.best!=null?' \u00b7 best lap '+fmt(G.best):'')})}
+  showOverlay('result',{title:cr&&cr.champ?'Champion!':pos===1?'Victory':ordinal(pos)+' place',text:LAPS+' laps \u00b7 your time '+fmt(G.finT)+(G.best!=null?' \u00b7 best lap '+fmt(G.best):'')+(cr?' \u00b7 +'+cr.me.pts+' pts \u00b7 '+(CH.r>=TRACKS.length?'season complete':'round '+CH.r+' done, '+CH.p[0]+' pts total'):'')});
+  if(cr){const R=$('goRace');R.textContent=CH.r>=TRACKS.length?'Final standings':'Championship';R.dataset.act='champ'}}
 
 /* ---------- tyres, weather, pit lane, livery ---------- */
 const TY=[{n:'Soft',k:'S',c:[.9,.12,.12],g:1.05,wr:.0026,d:'Fast, wears quickly'},{n:'Medium',k:'M',c:[.96,.8,.1],g:1,wr:.0016,d:'Balanced'},{n:'Hard',k:'H',c:[.95,.95,.95],g:.955,wr:.0009,d:'Durable, slower'},{n:'Inter',k:'I',c:[.1,.72,.28],wr:.0022,d:'Damp track'},{n:'Wet',k:'W',c:[.15,.45,.95],wr:.0022,d:'Heavy rain'}];
@@ -1261,11 +1298,12 @@ function rainDraw(dt){const w=innerWidth,h=innerHeight;if(rc.width!==w||rc.heigh
     const x=d.x*w,y=d.y*h,L=(18+d.l*28)*(1+sp/200);rx.moveTo(x,y);rx.lineTo(x-L*sl*.6,y-L)}
   rx.stroke()}
 /* livery page */
-const PRE=[['#0d1f6b','#e11b22','#d4a937'],['#d6141c','#f2efe6','#c9ccd1'],['#f57a0a','#1450c0','#101010'],['#161616','#25d366','#e8e8e8'],['#0b8a5a','#f0e23a','#d4a937'],['#6b21a8','#f472b6','#c9ccd1']];
+const PRE=[['#0d1f6b','#e11b22','#d4a937'],['#d6141c','#f2efe6','#c9ccd1'],['#f57a0a','#1450c0','#101010'],['#161616','#25d366','#e8e8e8'],['#0b8a5a','#f0e23a','#d4a937'],['#6b21a8','#f472b6','#c9ccd1'],
+['#101010','#d4af37','#d4af37'],['#f4f4f4','#d6141c','#101010'],['#0aa5a5','#ff4f9a','#e8e8e8'],['#ff7a00','#101010','#c9ccd1'],['#b9bec7','#1450c0','#101010'],['#9be21a','#4b1d8f','#101010'],['#6d0f1d','#f1e6c8','#d4a937'],['#0b1b3a','#ffffff','#c9ccd1'],['#1e90ff','#ffe400','#101010'],['#2b2b2b','#ff2d2d','#ff2d2d'],['#e8d8b0','#2f6f3e','#8a6a2a'],['#7a0bc0','#00e5ff','#e8e8e8']];
 const hex2=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255),tohex=c=>'#'+c.map(v=>Math.round(clamp(v,0,1)*255).toString(16).padStart(2,'0')).join('');
 try{const sv=JSON.parse(localStorage.getItem('f1-livery')||'null');if(sv&&sv.length===3){const L=LIVERIES[0];L.paint=hex2(sv[0]);L.accent=hex2(sv[1]);L.rim=hex2(sv[2])}}catch(e){}
-const DESIGNS=['Solid','Centre stripe','Twin stripes','Chevrons','Split','Hoops','Checker','Fade','Slash'];
-try{LIVERIES[0].design=clamp(parseInt(localStorage.getItem('f1-design'))||0,0,8)}catch(e){}
+const DESIGNS=['Solid','Centre stripe','Twin stripes','Chevrons','Split','Hoops','Checker','Fade','Slash','Pinstripes','Diagonal bands','Dots','Camo','Flames','Waves','Zigzag','Side fade','Rear fade'];
+try{LIVERIES[0].design=clamp(parseInt(localStorage.getItem('f1-design'))||0,0,17)}catch(e){}
 function designApply(d){LIVERIES[0].design=d;try{localStorage.setItem('f1-design',d)}catch(e){}document.querySelectorAll('#designs button').forEach((b,i)=>b.classList.toggle('on',i===d))}
 DESIGNS.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>designApply(i);$('designs').appendChild(b)});
 designApply(LIVERIES[0].design);
@@ -1274,6 +1312,8 @@ function openGarage(){G.mode='garage';$('overlay').hidden=true;$('garage').hidde
 ['cPri','cSec','cRim'].forEach(id=>$(id).addEventListener('input',liveryApply));
 PRE.forEach(p=>{const b=document.createElement('button');b.style.background='linear-gradient(90deg,'+p[0]+' 0 40%,'+p[1]+' 40% 72%,'+p[2]+' 72%)';b.setAttribute('aria-label','Preset');
   b.onclick=()=>{$('cPri').value=p[0];$('cSec').value=p[1];$('cRim').value=p[2];liveryApply()};$('presets').appendChild(b)});
+{const b=document.createElement('button');b.textContent='?';b.title='Random livery';b.setAttribute('aria-label','Random livery');b.style.cssText='font:700 16px var(--display);color:var(--fg);background:rgba(255,255,255,.08)';
+  b.onclick=()=>{const h=()=>'#'+[0,0,0].map(()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0')).join('');$('cPri').value=h();$('cSec').value=h();$('cRim').value=h();liveryApply();designApply(Math.floor(Math.random()*DESIGNS.length))};$('presets').appendChild(b)}
 $('garDone').addEventListener('click',()=>{$('garage').hidden=true;G.mode='menu';$('overlay').hidden=false});
 $('goLiv').addEventListener('click',openGarage);
 
@@ -1291,7 +1331,7 @@ function showLogin(msg){ACC.user=null;ACC.admin=false;G.mode='menu';$('overlay')
 const BKEYS=()=>{const o={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^apex-(best|sec)/.test(k))o[k]=localStorage.getItem(k)}}catch(e){}return o};
 let svT=0;
 function saveProfile(){if(!ACC.user)return;clearTimeout(svT);svT=setTimeout(()=>{let lv=null;try{lv=JSON.parse(localStorage.getItem('f1-livery')||'null')}catch(e){}
-  fetch('/api/profile',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({profile:{drv:DRV,livery:lv,bests:BKEYS()}})}).catch(()=>{})},800)}
+  fetch('/api/profile',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({profile:{drv:DRV,livery:lv,bests:BKEYS(),champ:(()=>{try{return JSON.parse(localStorage.getItem(CH_KEY)||'null')}catch(e){return null}})()}})}).catch(()=>{})},800)}
 try{const _si=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){_si.call(this,k,v);if(/^(apex-|f1-livery)/.test(k))saveProfile()}}catch(e){}
 function loadBests(){G.best=null;G.bestSec=[null,null,null];try{const b=parseFloat(localStorage.getItem('apex-best'+TSUF));if(isFinite(b))G.best=b}catch(e){}
   try{const b=JSON.parse(localStorage.getItem('apex-sec'+TSUF)||'null');if(Array.isArray(b)&&b.length===3)G.bestSec=b}catch(e){}}
@@ -1300,9 +1340,11 @@ function loggedIn(user,isNew,prof){ACC.user=user;$('login').hidden=true;prof=pro
   if(user){try{Object.keys(BKEYS()).forEach(k=>localStorage.removeItem(k))}catch(e){}
     if(prof.bests)for(const[k,v]of Object.entries(prof.bests))try{Storage.prototype.setItem.call(localStorage,k,v)}catch(e){}
     if(prof.livery&&prof.livery.length===3){const L=LIVERIES[0];L.paint=hex2(prof.livery[0]);L.accent=hex2(prof.livery[1]);L.rim=hex2(prof.livery[2]);try{Storage.prototype.setItem.call(localStorage,'f1-livery',JSON.stringify(prof.livery))}catch(e){}}
+    try{localStorage.removeItem(CH_KEY);if(prof.champ)Storage.prototype.setItem.call(localStorage,CH_KEY,JSON.stringify(prof.champ))}catch(e){}
     loadBests()}
+  CH=chLoad();renderTrackGrid();
   if(prof.drv)Object.assign(DRV,prof.drv);
-  drvApply();G.mode='menu';showOverlay('menu');if(user&&(isNew||!prof.drv))openDriver();
+  drvApply();G.mode='menu';showOverlay('menu');try{if(sessionStorage.getItem('f1-champ-go')){chLaunch();return}}catch(e){}if(user&&(isNew||!prof.drv))openDriver();
   try{const c=sessionStorage.getItem('f1-mp-join');if(c&&user){sessionStorage.removeItem('f1-mp-join');mpOpen();mpConnect(c,false)}}catch(e){}}
 const lgErr=t=>{$('lgMsg').textContent=t};
 function banMsg(j){return 'This account is banned '+(j.until?'until '+new Date(j.until).toLocaleString():'permanently')+(j.reason?'. Reason: '+j.reason:'.')}
@@ -1544,26 +1586,28 @@ function trackPic(cv,t,col){const sp=trackSpline(t.ctrl),pts=sp.pts,W=cv.width=4
   c.beginPath();c.moveTo(X+8,Y-18);c.lineTo(X+19,Y-12);c.lineTo(X+8,Y-6);c.closePath();c.fill();
   c.font='700 11px sans-serif';c.fillStyle='rgba(255,255,255,.7)';c.fillText('S/F',X-9,Y+22)}
 function bestOf(i){try{const v=parseFloat(localStorage.getItem('apex-best'+(i?'-'+TRACKS[i].id:'')));return isFinite(v)?v:null}catch(e){return null}}
-function trkInit(){lapsInit();const r=$('trkRow'),g=$('trkGrid');
-  TRACKS.forEach((t,i)=>{const b=document.createElement('button');b.className='go alt';b.style.cssText='font-size:15px;padding:7px 14px'+(i===TIDX?';background:var(--signal);color:#111;border-color:var(--signal)':'');b.textContent=t.name;b.title=t.sub;b.onclick=()=>{if(i===TIDX)return;try{localStorage.setItem('f1-track',t.id)}catch(e){}location.reload()};r.appendChild(b);
-    const c=document.createElement('button');c.className='tc'+(i===TIDX?' sel':'');c.setAttribute('aria-label',t.name);
+function renderTrackGrid(){const r=$('trkRow'),g=$('trkGrid');r.innerHTML='';g.innerHTML='';
+  TRACKS.forEach((t,i)=>{const lock=i>=CH.u;
+    const b=document.createElement('button');b.className='go alt';b.style.cssText='font-size:15px;padding:7px 14px'+(i===TIDX?';background:var(--signal);color:#111;border-color:var(--signal)':'');b.textContent=t.name;b.title=t.sub;b.disabled=lock;b.onclick=()=>{if(i===TIDX)return;try{localStorage.setItem('f1-track',t.id)}catch(e){}location.reload()};r.appendChild(b);
+    const c=document.createElement('button');c.className='tc'+(i===TIDX?' sel':'')+(lock?' lock':'');c.setAttribute('aria-label',t.name);
     const bt=bestOf(i);
-    c.innerHTML='<span class="tcw"><canvas></canvas>'+(i===TIDX?'<span class="ttag">Selected</span>':'')+'</span><div class="tb"><div class="tn">'+esc(t.name)+'</div><div class="ts">'+esc(t.sub)+'</div><div class="tm"><span>'+(trackSpline(t.ctrl).len/1000).toFixed(2)+' km</span><span>'+(bt!=null?'BEST <b>'+fmt(bt)+'</b>':'NO LAP YET')+'</span></div></div>';
+    c.innerHTML='<span class="tcw"><canvas></canvas>'+(i===TIDX?'<span class="ttag">Selected</span>':'')+(lock?'<span class="lk"><i>&#128274;</i>Finish round '+(i-1)+'<br>in Championship</span>':'')+'</span><div class="tb"><div class="tn">'+esc(t.name)+'</div><div class="ts">'+esc(t.sub)+'</div><div class="tm"><span>'+(trackSpline(t.ctrl).len/1000).toFixed(2)+' km</span><span>'+(lock?'LOCKED':bt!=null?'BEST <b>'+fmt(bt)+'</b>':'NO LAP YET')+'</span></div></div>';
     trackPic(c.querySelector('canvas'),t,TCOL[i%TCOL.length]);
-    c.onclick=()=>{if(i===TIDX)return;try{localStorage.setItem('f1-track',t.id)}catch(e){}location.reload()};g.appendChild(c)})}
-function showOverlay(kind,info){$('trkRow').hidden=$('lapRow').hidden=kind!=='menu';$('trkGrid').hidden=kind!=='menu';$('overlay').classList.toggle('home',kind==='menu');$('overlay').hidden=false;$('goLiv').hidden=$('goDrv').hidden=$('who').hidden=$('goMP').hidden=kind!=='menu';const R=$('goRace'),T=$('goTA');
+    c.onclick=()=>{if(lock){flash('Track locked','Finish round '+(i-1)+' in Championship','var(--signal)');return}if(i===TIDX)return;try{localStorage.setItem('f1-track',t.id)}catch(e){}location.reload()};g.appendChild(c)})}
+function trkInit(){lapsInit();renderTrackGrid()}
+function showOverlay(kind,info){$('trkRow').hidden=$('lapRow').hidden=kind!=='menu';$('trkGrid').hidden=kind!=='menu';$('overlay').classList.toggle('home',kind==='menu');$('overlay').hidden=false;$('goLiv').hidden=$('goDrv').hidden=$('who').hidden=$('goMP').hidden=$('goCh').hidden=kind!=='menu';const R=$('goRace'),T=$('goTA');
   $('resTbl').hidden=kind!=='result';$('keys').hidden=kind==='result';
   if(kind==='menu'){$('ovTitle').innerHTML='F1 <em>22</em>';$('ovP').textContent='Race 18 rivals over '+LAPS+' laps in changing weather, or chase your best lap in time attack on '+TRK.name+' ('+(TR.len/1000).toFixed(1)+' km).';
     R.textContent='Race \u00b7 '+LAPS+' laps';R.dataset.act='race';T.textContent='Time attack';T.dataset.act='ta';$('sub').textContent=(TR.len/1000).toFixed(1)+' km \u00b7 3 sectors \u00b7 lap times save on this device'}
   else if(kind==='pause'){$('ovTitle').textContent='Paused';$('ovP').textContent=G.race?'Race in progress.':'Time attack.';
-    R.textContent='Resume';R.dataset.act='resume';T.textContent='Quit to menu';T.dataset.act='menu';$('sub').textContent=''}
+    R.textContent='Resume';R.dataset.act='resume';T.textContent='Quit to menu';T.dataset.act='menu';$('sub').textContent='';if(G.champ){$('resTbl').hidden=false;$('resTbl').innerHTML=chTableHtml(10)}}
   else{$('ovTitle').textContent=info.title;$('ovP').textContent=info.text;
     R.textContent=G.mp?'Back to lobby':'Race again';R.dataset.act='race';T.textContent='Menu';T.dataset.act='menu';$('sub').textContent=''}
   R.disabled=false;T.disabled=false}
 function setPause(p){if(G.mp){if(p)showOverlay('pause');else $('overlay').hidden=true;return}G.paused=p;if(p)showOverlay('pause');else $('overlay').hidden=true}
 function setupGrid(){const N=TR.N;S.lapOffset=-N;S.justCrossed=false;
   if(G.race){const g=GRID[G.mp?G.mpSlot:PSLOT];placeCar(N+g[0],g[1]);resetAI()}else placeCar(N-6,0)}
-function toMenu(keep){$('overlay').classList.remove('pod');scReset();if(G.mp){if(!keep)mpLeave();G.mp=false;LAPS=lapsPref();initAI()}wxReset();G.pit=null;S.lane=false;S.limit=false;$('tyreSel').hidden=true;$('garage').hidden=true;$('pitMenu').hidden=true;G.mode='menu';G.paused=false;G.racing=false;G.finished=false;G.resultShown=false;G.race=true;G.t=0;G.lapActive=false;
+function toMenu(keep){G.champ=false;$('overlay').classList.remove('pod');scReset();if(G.mp){if(!keep)mpLeave();G.mp=false;LAPS=lapsPref();initAI()}wxReset();G.pit=null;S.lane=false;S.limit=false;$('tyreSel').hidden=true;$('garage').hidden=true;$('pitMenu').hidden=true;G.mode='menu';G.paused=false;G.racing=false;G.finished=false;G.resultShown=false;G.race=true;G.t=0;G.lapActive=false;
   setupGrid();G.camYaw=S.th;S.rpm=4200;$('lights').classList.remove('on');$('posRow').hidden=false;showOverlay('menu');if(keep)mpOpen()}
 
 /* ---------- camera + render ---------- */
@@ -1731,16 +1775,52 @@ function frame(now){
 }
 function startRace(race){
   G.mode='play';G.paused=false;G.racing=false;G.cdT=0;G.goFired=false;G.lightsOn=0;G.countdown=1;G.t=0;G.lapActive=false;G.lapNo=1;G.last=null;G.secPassed=0;G.sec=[null,null,null];
-  G.race=!!race;G.finished=false;G.cool=false;G.coolDone=0;G.resultShown=false;G.goT=0;G.finT=0;
+  G.race=!!race;G.chRec=false;G.finished=false;G.cool=false;G.coolDone=0;G.resultShown=false;G.goT=0;G.finT=0;
   setupGrid();skidClear();
   G.camYaw=S.th;S.rpm=4200;updateSectors();$('lights').classList.add('on');$('overlay').hidden=true;$('posRow').hidden=!G.race;
   S.wear=0;S.lane=false;S.limit=false;S.lift=0;S.pl0=-100;G.pit=null;LIVERIES[0].tyre=TY[S.tyre].c;$('pitMenu').hidden=true;aiStart();scReset();scPlan();
 }
 function act(a){if(!AC)audioStart();if(AC&&AC.state==='suspended')AC.resume();
+  if(a==='champ'){chOpen();return}
+  if(a==='race'||a==='ta')G.champ=false;
   if(a==='race'){if(G.mp)toMenu(true);else openTyres(true)}else if(a==='ta')openTyres(false);else if(a==='resume')setPause(false);else if(a==='menu')toMenu()}
 $('goRace').addEventListener('click',()=>act($('goRace').dataset.act));
 $('goTA').addEventListener('click',()=>act($('goTA').dataset.act));
 
+
+/* ---------- championship ---------- */
+const CH_KEY='apex-champ',PTS=[25,18,15,12,10,8,6,4,2,1];
+function chLoad(){try{const o=JSON.parse(localStorage.getItem(CH_KEY)||'null');if(o&&Array.isArray(o.p)&&o.p.length===19)return {u:clamp(o.u|0,2,TRACKS.length),r:clamp(o.r|0,0,TRACKS.length),p:o.p.map(v=>v|0),h:Array.isArray(o.h)?o.h.slice(0,TRACKS.length):[],s:Math.max(1,o.s|0),c:Array.isArray(o.c)?o.c.slice(-12):[]}}catch(e){}return {u:2,r:0,p:Array(19).fill(0),h:[],s:1,c:[]}}
+let CH=chLoad();
+const chSave=()=>{try{localStorage.setItem(CH_KEY,JSON.stringify(CH))}catch(e){}};
+const chName=i=>i===0?DRV.name.toUpperCase():LIVERIES[i].name.toUpperCase();
+function chOrder(){return CH.p.map((p,i)=>({i,p})).sort((a,b)=>b.p-a.p||a.i-b.i)}
+function chTableHtml(limit){const o=chOrder();let h='<tr><th>Pos</th><th>Driver</th><th>Pts</th></tr>';
+  o.forEach((r,k)=>{if(limit&&k>=limit&&r.i!==0)return;h+='<tr'+(r.i===0?' class="you"':k<3?' class="top"':'')+'><td>'+(k+1)+'</td><td><i style="background:'+rgb(r.i===0?LIVERIES[0].paint:LIVERIES[r.i].paint)+'"></i>'+esc(chName(r.i))+'</td><td>'+r.p+'</td></tr>'});return h}
+function chRecord(rows){ // called once when a championship race result is shown
+  if(G.chRec||CH.r>=TRACKS.length)return null;G.chRec=true;
+  const res=rows.map((r,k)=>({idx:r.idx,pos:k+1,pts:r.dnf?0:(PTS[k]||0)}));
+  for(const x of res)CH.p[x.idx]+=x.pts;
+  const me=res.find(x=>x.idx===0);CH.h[CH.r]=[me.pos,me.pts];CH.r++;CH.u=Math.max(CH.u,Math.min(TRACKS.length,CH.r+2));
+  let champ=false;if(CH.r>=TRACKS.length){const fin=chOrder().findIndex(x=>x.i===0)+1;CH.c.push(fin);champ=fin===1}
+  chSave();return {res,me,champ}}
+function chRender(){const done=CH.r>=TRACKS.length,o=chOrder(),rank=o.findIndex(x=>x.i===0)+1;
+  $('chSub').innerHTML='Season '+CH.s+' · '+(done?(rank===1?'<b style="color:#ffd23f">&#9733; You are the champion!</b>':'Season complete · you finished '+ordinal(rank)):'Round '+(CH.r+1)+' of '+TRACKS.length+' · you are '+ordinal(rank)+' with '+CH.p[0]+' pts')+'<br>Finish each round to unlock more tracks. Points: 25-18-15-12-10-8-6-4-2-1.';
+  $('chTbl').innerHTML=chTableHtml(0);
+  let h='';TRACKS.forEach((t,i)=>{const d=CH.h[i],cls=i<CH.r?'done':i===CH.r&&!done?'next':'lock';
+    h+='<div class="rd '+cls+'"><b>'+(i+1)+'</b><div class="nm">'+esc(t.name)+'<small>'+esc(t.sub)+'</small></div><div class="st">'+(d?ordinal(d[0])+' · +'+d[1]:cls==='next'?'NEXT':'')+'</div></div>'});
+  $('chCal').innerHTML=h;
+  $('chGo').hidden=done;$('chNew').hidden=!done;if(!done)$('chGo').textContent='Race round '+(CH.r+1)+' · '+TRACKS[CH.r].name+' · '+lapsPref()+' laps'}
+function chOpen(){G.champ=false;$('overlay').hidden=true;chRender();$('champ').hidden=false}
+function chLaunch(){G.champ=true;G.chRec=false;$('champ').hidden=true;$('overlay').hidden=true;try{sessionStorage.removeItem('f1-champ-go')}catch(e){}openTyres(true);G.champ=true}
+function chStart(){if(CH.r>=TRACKS.length)return;const t=TRACKS[CH.r];
+  try{sessionStorage.setItem('f1-champ-go','1');localStorage.setItem('f1-track',t.id)}catch(e){}
+  if(t.id!==TRK.id){location.reload();return}
+  chLaunch()}
+$('goCh').addEventListener('click',()=>{if(!AC)audioStart();chOpen()});
+$('chBack').addEventListener('click',()=>{$('champ').hidden=true;toMenu()});
+$('chGo').addEventListener('click',()=>{if(!AC)audioStart();chStart()});
+$('chNew').addEventListener('click',()=>{CH.p=Array(19).fill(0);CH.h=[];CH.r=0;CH.s++;chSave();chRender()});
 
 /* ---------- multiplayer ---------- */
 const MP={ws:null,code:'',id:0,players:[],host:false,off:0,rtt:1e9,laps:5,status:'lobby',track:'',sendT:0,rem:new Map(),startTm:0,pingTm:0,cd:0};
@@ -1792,7 +1872,7 @@ function mpBegin(m){
   LAPS=m.laps;G.mp=true;G.mpWx=m.wx;G.mpSlot=Math.max(0,m.grid.indexOf(MP.id));
   AI.length=0;MP.rem.clear();
   m.grid.forEach((id,k)=>{if(id===MP.id)return;const p=MP.players.find(x=>x.id===id);if(!p)return;const g=GRID[Math.min(k,GRID.length-1)];
-    const liv={name:p.drv||p.name,paint:hex2(p.liv[0]),accent:hex2(p.liv[1]),rim:hex2(p.liv[2]),tyre:TY[1].c,design:clamp(p.des|0,0,8),num:p.num||0};
+    const liv={name:p.drv||p.name,paint:hex2(p.liv[0]),accent:hex2(p.liv[1]),rim:hex2(p.liv[2]),tyre:TY[1].c,design:clamp(p.des|0,0,17),num:p.num||0};
     const a={liv,num:p.num||0,mp:true,pid:id,comp:1,ty:1,pit:0,s:g[0],d:g[1],v:0,x:0,z:0,th:0,thT:0,delta:0,spin:0,roll:0,pitch:0,fin:false,finT:0,side:1,tgt:null,tt:0};
     aiPlace(a,0);AI.push(a);MP.rem.set(id,a)});
   S.tyre=+$('mpTy').value||1;
@@ -1821,7 +1901,7 @@ try{
   loadModel();initAtlas();numInit();initMeshes();initGround();skidInit();buildMap();resize();
   trkInit();initAI();G.race=true;setupGrid();G.camYaw=S.th;G.cam=0;showOverlay('menu');boot();
 }catch(err){console.error(err);$('sub').textContent='Could not start: '+err.message}
-window.__apex={LIV:LIVERIES,FX,fxTick,POD,podW,MARSH,finishRace,SCS,scPlan,crashStart,resetToTrack,srOf,W,DRV,TY,S,G,inp,TR,step,query,startRace,keys,AI,LAPS,VTa,LINE,BRAKE,standings,skidBuf,skidUpdate,LIVERIES,toMenu};
+window.__apex={chOpen,chStart,chLaunch,getCH:()=>CH,LIV:LIVERIES,FX,fxTick,POD,podW,MARSH,finishRace,SCS,scPlan,crashStart,resetToTrack,srOf,W,DRV,TY,S,G,inp,TR,step,query,startRace,keys,AI,LAPS,VTa,LINE,BRAKE,standings,skidBuf,skidUpdate,LIVERIES,toMenu};
 requestAnimationFrame(frame);
 })();
 </script>
