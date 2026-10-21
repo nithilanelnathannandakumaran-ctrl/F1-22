@@ -1585,7 +1585,6 @@ function render(dt,cm){
 function drawCarFull(c,liv,lod){
   const bodyM=mul(trans(c.x,(c.lift||0)+(c.kb||0),c.z),mul(rotY(c.th),mul(rotZ(c.roll||0),rotX(c.pitch||0))));
   for(const p of car.body){if(lod&&p.lod)continue;drawPrim(p,bodyM,liv)}
-  if(!lod)drawNum(liv,bodyM);
   for(const w of ['FL','FR','RL','RR']){const wd=META.wheels[w];let m;const dw=c.det&&c.det[w];if(dw){m=mul(trans(dw.x,dw.y,dw.z),mul(rotY(dw.ry||0),rotX(dw.sp||0)))}else{m=mul(bodyM,trans(wd.c[0],wd.c[1],wd.c[2]));if(wd.front)m=mul(m,rotY(c.delta||0));m=mul(m,rotX(c.spin||0))}
     for(const p of car.wheels[w])drawPrim(p,m,liv)}
   
