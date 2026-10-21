@@ -239,7 +239,7 @@ export class Room {
   lobby() {
     const h = this.hostId();
     this.all({ t: 'lobby', track: this.track, laps: this.laps, status: this.status,
-      players: [...this.players.values()].map(p => ({ id: p.id, name: p.name, drv: p.drv, tag: p.tag, num: p.num, liv: p.liv, host: p.id === h })) });
+      players: [...this.players.values()].map(p => ({ id: p.id, name: p.name, drv: p.drv, tag: p.tag, num: p.num, des: p.des | 0, liv: p.liv, host: p.id === h })) });
   }
   endRace() {
     clearTimeout(this.timer); this.timer = null; if (this.status !== 'racing') return;
@@ -278,8 +278,10 @@ export class Room {
         case 'ping': this.send(me, { t: 'pong', c: num(m.c, 0, 1e15, 0), now: Date.now() }); break;
         case 'hi':
           me.drv = String(m.drv || me.name).slice(0, 22); me.tag = String(m.tag || 'DRI').replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || 'DRI';
-          me.num = num(m.num, 1, 99, 7); me.liv = Array.isArray(m.liv) && m.liv.length === 3 ? m.liv.map(hexOk) : me.liv; this.lobby(); break;
-        case 'cfg': break; // races are always 10 laps
+          me.num = num(m.num, 1, 99, 7); me.des = num(m.des, 0, 8, 0) | 0; me.liv = Array.isArray(m.liv) && m.liv.length === 3 ? m.liv.map(hexOk) : me.liv; this.lobby(); break;
+        case 'cfg':
+          if (me.id !== this.hostId() || this.status !== 'lobby') return;
+          this.laps = num(m.laps, 1, 100, 10) | 0; this.lobby(); break;
         case 'start':
           if (me.id !== this.hostId() || this.status !== 'lobby') return;
           this.status = 'racing'; this.raceSeq++;
