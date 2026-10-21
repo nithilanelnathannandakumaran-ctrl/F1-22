@@ -142,7 +142,14 @@ export default {
         if (pr.drv && typeof pr.drv === 'object') clean.drv = { name: String(pr.drv.name || '').slice(0, 22), tag: String(pr.drv.tag || '').slice(0, 3), num: Math.max(1, Math.min(99, +pr.drv.num || 7)), nat: String(pr.drv.nat || 'GBR').slice(0, 3) };
         if (Array.isArray(pr.livery) && pr.livery.length === 3) clean.livery = pr.livery.map(x => String(x).slice(0, 9));
         if (pr.bests && typeof pr.bests === 'object') { clean.bests = {}; for (const [k, v] of Object.entries(pr.bests).slice(0, 30)) if (/^apex-(best|sec)[-a-z0-9]*$/.test(k)) clean.bests[k] = String(v).slice(0, 80); }
-        const s = JSON.stringify(clean); if (s.length > 4000) return json({ error: 'Too large' }, 400);
+        const ch = pr.champ;
+        if (ch && typeof ch === 'object' && Array.isArray(ch.p) && ch.p.length === 19) {
+          const n = (v, lo, hi) => Math.max(lo, Math.min(hi, v | 0));
+          clean.champ = { u: n(ch.u, 2, 20), r: n(ch.r, 0, 20), s: n(ch.s, 1, 9999), p: ch.p.map(v => n(v, 0, 9999)),
+            h: (Array.isArray(ch.h) ? ch.h : []).slice(0, 20).map(x => Array.isArray(x) ? [n(x[0], 0, 30), n(x[1], 0, 30)] : null),
+            c: (Array.isArray(ch.c) ? ch.c : []).slice(-12).map(v => n(v, 0, 30)) };
+        }
+        const s = JSON.stringify(clean); if (s.length > 7000) return json({ error: 'Too large' }, 400);
         await env.DB.prepare('UPDATE users SET profile=? WHERE id=?').bind(s, u.id).run();
         return json({ ok: true });
       }
@@ -278,7 +285,7 @@ export class Room {
         case 'ping': this.send(me, { t: 'pong', c: num(m.c, 0, 1e15, 0), now: Date.now() }); break;
         case 'hi':
           me.drv = String(m.drv || me.name).slice(0, 22); me.tag = String(m.tag || 'DRI').replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || 'DRI';
-          me.num = num(m.num, 1, 99, 7); me.des = num(m.des, 0, 8, 0) | 0; me.liv = Array.isArray(m.liv) && m.liv.length === 3 ? m.liv.map(hexOk) : me.liv; this.lobby(); break;
+          me.num = num(m.num, 1, 99, 7); me.des = num(m.des, 0, 17, 0) | 0; me.liv = Array.isArray(m.liv) && m.liv.length === 3 ? m.liv.map(hexOk) : me.liv; this.lobby(); break;
         case 'cfg':
           if (me.id !== this.hostId() || this.status !== 'lobby') return;
           this.laps = num(m.laps, 1, 100, 10) | 0; this.lobby(); break;
