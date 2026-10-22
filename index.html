@@ -119,6 +119,14 @@ body{touch-action:none;-webkit-user-select:none;user-select:none}
 .tc.lock canvas{filter:grayscale(1) brightness(.6)}
 .tc .lk{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:700 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:#fff;text-align:center;padding:0 10px}
 .tc .lk i{font-style:normal;font-size:30px}
+
+#radio{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:392px;width:min(300px,46vw);padding:8px 12px 9px;background:linear-gradient(135deg,rgba(18,24,40,.94),rgba(8,10,16,.94));border-left:4px solid #19b3e6;font-size:14px;line-height:1.25;color:#fff;animation:radioIn .25s ease-out;clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%)}
+#radio b{display:block;font:700 10px var(--display);letter-spacing:.16em;text-transform:uppercase;color:#19b3e6;margin-bottom:3px}
+#radio b::before{content:'\25CF ';color:#ff3b30;animation:rdot 1s infinite}
+#radio.pen{border-left-color:#e10600}#radio.pen b{color:#ff6b5e}
+@keyframes radioIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+@keyframes rdot{50%{opacity:.25}}
+@media (max-width:900px),(max-height:520px){#radio{top:132px;left:max(8px,env(safe-area-inset-left,0px));width:min(190px,38vw);padding:5px 8px 6px;font-size:11px}#radio b{font-size:8px}}
 .overlay.pod{justify-content:flex-end !important;background:linear-gradient(90deg,rgba(8,13,26,0) 35%,rgba(8,13,26,.92)) !important}
 .flagbar{position:absolute;left:50%;top:max(74px,calc(env(safe-area-inset-top,0px) + 74px));transform:translateX(-50%);padding:8px 22px;border-radius:3px;background:#f5d90a;color:#111;font:900 italic 22px var(--display);letter-spacing:.08em;text-transform:uppercase;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.5);pointer-events:none;z-index:4}
 .flagbar small{display:block;font:600 12px var(--mono);letter-spacing:.04em;text-transform:none;margin-top:2px}
@@ -249,9 +257,11 @@ button.go:hover:not(:disabled){filter:brightness(1.18)}
     <div class="row"><span class="lbl">Sky</span><span class="val" id="wxV">Clear</span></div>
     <div class="row"><span class="lbl">Track</span><span class="val" id="trkV">Dry</span></div>
     <div class="row"><span class="lbl">Next</span><span class="val" id="fcV" style="font-size:14px">-</span></div>
+    <div class="row" id="penRow" hidden><span class="lbl">Pen</span><span class="val yellow" id="penV">+0s</span></div>
     <div class="sectors"><div id="s1"></div><div id="s2"></div><div id="s3"></div></div>
   </div>
   <div class="mapbox panel"><canvas id="map" width="360" height="300"></canvas><div id="lb" hidden></div></div>
+  <div id="radio" hidden><b id="radioWho">Race engineer</b><span id="radioTx"></span></div>
   <div class="lights panel" id="lights"><i></i><i></i><i></i><i></i><i></i></div>
   <div class="msg" id="msg"></div><div class="flagbar" id="flagBar" hidden></div>
   <div class="tag panel" id="pitTag" hidden></div>
@@ -1116,7 +1126,7 @@ function scGapLimit(sTot,self,isPlayer){
   if(!isPlayer&&!(S.lane||G.pit))chk(S.lapOffset+S.q.prog,Math.hypot(S.vx,S.vz));
   return lim}
 const scActive=()=>SCS.st==='pending'||SCS.st==='out'||SCS.st==='in';
-function flagBar(txt,sub,cls){const e=$('flagBar');if(!txt){e.hidden=true;return}e.hidden=false;e.className='flagbar '+(cls||'');e.innerHTML=txt+(sub?'<small>'+sub+'</small>':'')}
+function flagBar(txt,sub,cls){if(txt){const m={'Yellow flag':'Yellow flag, car in the barrier. No overtaking, be ready to stop.','Safety car':'Safety car, safety car. Hold position and stay behind.','Safety car in this lap':'Safety car is coming in this lap. Stay in formation.','Green flag':'Green flag, green flag. Racing resumes.'}[txt];if(m)radio(m,{pri:1})}const e=$('flagBar');if(!txt){e.hidden=true;return}e.hidden=false;e.className='flagbar '+(cls||'');e.innerHTML=txt+(sub?'<small>'+sub+'</small>':'')}
 function scReset(){FX.length=0;G.pod=null;S.burn=null;for(const a of AI)a.burn=null;SCS.st='none';SCS.t=0;SCS.car=null;SCS.plan=null;SCS.el=0;flagBar(null);for(const a of AI){a.crash=0;a.crashed=false;a.cr=null;a.det=null;a.lift=0;a.roll=0;a.pitch=0}if(S.cr){S.cr=null;S.det=null;S.wreck=null;S.lift=S.roll=S.pitch=0}}
 function scPlan(){
   if(!G.race||G.mp||AI.length<8||LAPS<3){SCS.plan=null;return}
@@ -1231,8 +1241,8 @@ function standings(){const rows=[{name:DRV.name.toUpperCase(),you:true,tot:S.lap
   for(const a of AI)rows.push({name:a.liv.name.toUpperCase(),tot:a.s-(a.crash?1e6:0),fin:a.fin,finT:a.finT,v:a.v,col:a.liv.paint,dnf:!!a.crash,liv:a.liv,idx:AI.indexOf(a)+1});
   rows.sort((x,y)=>x.fin&&y.fin?x.finT-y.finT:x.fin?-1:y.fin?1:y.tot-x.tot);return rows}
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:Math.min(n%10,4)%4]||'th');
-function playerFinish(){if(G.mp)mpSend({t:'fin',time:G.t-G.goT});G.finished=true;G.cool=true;G.coolDone=0;G.finT=G.t-G.goT;G.finishAt=G.t;const p=standings().findIndex(r=>r.you)+1;
-  flash(p===1?'Winner':ordinal(p),'Race time '+fmt(G.finT)+' \u00b7 celebration lap: drive into the pits',p===1?'var(--purple)':'var(--fg)')}
+function playerFinish(){const pn=G.race?(S.pen||0):0;if(G.mp)mpSend({t:'fin',time:G.t-G.goT+pn});G.finished=true;G.cool=true;G.coolDone=0;G.finT=G.t-G.goT+pn;G.finishAt=G.t;const p=standings().findIndex(r=>r.you)+1;
+  flash(p===1?'Winner':ordinal(p),'Race time '+fmt(G.finT)+(S.pen&&G.race?' (incl. +'+S.pen+'s penalty)':'')+' \u00b7 celebration lap: drive into the pits',p===1?'var(--purple)':'var(--fg)')}
 function finishRace(){G.resultShown=true;G.mode='result';const rows=standings(),now=G.t-G.goT,N=TR.N;
   const tm=rows.map(r=>r.fin?r.finT:now+Math.max(0,(LAPS*N-r.tot))*STEP/Math.max(r.v,35));
   const pos=rows.findIndex(r=>r.you)+1;
@@ -1241,7 +1251,7 @@ function finishRace(){G.resultShown=true;G.mode='result';const rows=standings(),
   rows.forEach((r,i)=>{h+='<tr'+(r.you?' class="you"':'')+'><td>'+(i+1)+'</td><td><i style="background:'+rgb(r.col)+'"></i>'+r.name+'</td><td>'+(r.dnf?'DNF':i===0?fmt(tm[i]):(r.fin?'':'~')+'+'+(tm[i]-tm[0]).toFixed(3))+'</td>'+(cr?'<td class="cr">+'+cr.res[i].pts+'</td>':'')+'</tr>'});
   $('resTbl').innerHTML=h;
   if(G.race&&!G.mp&&rows.length>=3){FX.length=0;G.pod={t:0,top:rows.slice(0,3)};$('overlay').classList.add('pod')}
-  showOverlay('result',{title:cr&&cr.champ?'Champion!':pos===1?'Victory':ordinal(pos)+' place',text:LAPS+' laps \u00b7 your time '+fmt(G.finT)+(G.best!=null?' \u00b7 best lap '+fmt(G.best):'')+(cr?' \u00b7 +'+cr.me.pts+' pts \u00b7 '+(CH.r>=TRACKS.length?'season complete':'round '+CH.r+' done, '+CH.p[0]+' pts total'):'')});
+  showOverlay('result',{title:cr&&cr.champ?'Champion!':pos===1?'Victory':ordinal(pos)+' place',text:LAPS+' laps \u00b7 your time '+fmt(G.finT)+(S.pen&&G.race?' (incl. +'+S.pen+'s penalty)':'')+(G.best!=null?' \u00b7 best lap '+fmt(G.best):'')+(cr?' \u00b7 +'+cr.me.pts+' pts \u00b7 '+(CH.r>=TRACKS.length?'season complete':'round '+CH.r+' done, '+CH.p[0]+' pts total'):'')});
   if(cr){const R=$('goRace');R.textContent=CH.r>=TRACKS.length?'Final standings':'Championship';R.dataset.act='champ'}}
 
 /* ---------- tyres, weather, pit lane, livery ---------- */
@@ -1381,7 +1391,9 @@ function step(dt){
   const rate=(Math.abs(st)>.01?6.5:9)/(1+au/80);
   S.steer+=clamp(st-S.steer,-rate*dt,rate*dt);
   const q=S.q,bw0=pitUpdate(q);S.onGrass=(q.d>KERB||q.d<bw0[2])&&!(inMS(q.i)&&Math.abs(q.d)<=WALL)&&!inEsc(q.i,q.d);
-  {const es=inEsc(q.i,q.d)&&Math.abs(q.d)>KERB;if(es&&!S.esc&&G.racing&&!G.finished)flash('Escape road','Rejoin when clear','var(--signal)');S.esc=es}
+  {const es=inEsc(q.i,q.d)&&Math.abs(q.d)>KERB;S.esc=es}
+  {const off=S.onGrass&&G.racing&&!G.finished&&!G.pit&&!S.lane&&!S.wreck&&Math.abs(S.vx*Math.sin(S.th)+S.vz*Math.cos(S.th))>6;
+   if(off&&!S.offPrev&&G.t-(S.offT||-99)>3){S.offT=G.t;trackLimits()}S.offPrev=off}
   const mu=(S.onGrass?.62:1.9)*gripMul(),DF=1+Math.pow(Math.min(au,100)/62,2),maxLat=mu*9.81*DF;
   const dmax=Math.min(.62,1.5*maxLat*WY/Math.max(u*u,1));
   const dph=-S.steer*dmax;S.delta=clamp(dph,-.42,.42);
@@ -1470,6 +1482,7 @@ function lapLogic(){
 }
 function sectorDone(k,t){const prevBest=G.bestSec[k];const rec=prevBest==null||t<prevBest;G.sec[k]=rec?'purple':'yellow';if(rec){G.bestSec[k]=t;try{localStorage.setItem('apex-sec'+TSUF,JSON.stringify(G.bestSec))}catch(e){}}updateSectors()}
 function lapDone(t){const rec=G.best==null||t<G.best;const prev=G.best;G.last=t;G.lastRec=rec;if(rec){G.best=t;try{localStorage.setItem('apex-best'+TSUF,String(t))}catch(e){}}
+  if(G.racing&&!G.finished)radio('Lap time '+fmt(t)+(rec?(prev==null?'. First lap on the board.':'. That is a personal best.'):'. '+(t-prev).toFixed(2)+' off your best.'),{pri:0});
   G.lapNo++;flash(fmt(t),rec?(prev==null?'First lap':'New best  -'+(prev-t).toFixed(3)):'+'+(t-prev).toFixed(3),rec?'var(--purple)':'var(--signal)')}
 function updateSectors(){['s1','s2','s3'].forEach((id,i)=>{const e=$(id);e.className=G.sec[i]||(G.lapActive&&G.secPassed===i?'live':'')})}
 
@@ -1500,6 +1513,59 @@ const revI=[...revsEl.children];
 const GEAR_TOP=[22,38,51,62,71,79,86,93];
 let msgTimer=0;
 function flash(txt,sub,col){const m=$('msg');m.innerHTML=txt+(sub?'<small>'+sub+'</small>':'');m.style.color=col||'var(--fg)';m.classList.add('show');clearTimeout(msgTimer);msgTimer=setTimeout(()=>m.classList.remove('show'),sub?2600:900)}
+
+/* ---------- race engineer, track limits, racing line ---------- */
+const RD={until:0,flags:{}};
+function radio(msg,o){o=o||{};const now=performance.now();if(!o.pri&&now<RD.until)return;
+  const e=$('radio');$('radioWho').textContent=o.who||'Race engineer';$('radioTx').textContent=msg;e.className=o.cls||'';e.hidden=false;
+  e.style.animation='none';void e.offsetWidth;e.style.animation='';RD.until=now+(o.dur||5200);clearTimeout(RD.tm);RD.tm=setTimeout(()=>{e.hidden=true},o.dur||5200)}
+function radioReset(){RD.flags={};RD.until=0;$('radio').hidden=true;S.offs=0;S.pen=0;S.offT=-99;S.offPrev=false;S.pitW=0}
+function trackLimits(){S.offs=(S.offs||0)+1;const o={who:'Stewards',pri:1,cls:'pen',dur:6500};
+  if(!G.race){G.lapActive=false;updateSectors();radio('Track limits exceeded. Lap time deleted.',o);return}
+  if(S.offs<=2){radio('Track limits warning '+S.offs+' of 2. After that, every offence is a 5 second penalty.',o);return}
+  S.pen=(S.pen||0)+5;radio('5 second time penalty for leaving the track. Total penalty: '+S.pen+' seconds.',o)}
+function engGap(){const me=S.lapOffset+S.q.prog;let ah=null,bh=null;
+  for(const a of AI){if(a.crash)continue;const d=(a.s-me)*STEP;if(d>0&&(!ah||d<ah.d))ah={d,a};if(d<0&&(!bh||-d<bh.d))bh={d:-d,a}}
+  const sp=Math.max(25,Math.hypot(S.vx,S.vz));return {ah:ah&&{t:ah.d/sp,a:ah.a},bh:bh&&{t:bh.d/sp,a:bh.a}}}
+let engAcc=0,engGapT=0,engPos=0;
+function engTick(dt){
+  const pen=S.pen>0;$('penRow').hidden=!pen;if(pen)$('penV').textContent='+'+S.pen+'s';
+  if(!G.racing||G.finished||G.mode!=='play'||G.paused)return;
+  engAcc+=dt;if(engAcc<1)return;engAcc=0;const F=RD.flags,t=G.t-G.goT;
+  if(t>1.5&&!F.start){F.start=1;radio(G.race?'Lights out and away we go. Good luck out there.':'Time attack. Find the line and push.')}
+  if(S.wear<.12){F.t1=F.t2=0}
+  else if(S.wear>.82&&!F.t2){F.t2=1;radio('Tyres are gone. Box, box.',{pri:1})}
+  else if(S.wear>.55&&!F.t1){F.t1=1;radio('Tyre wear is high. Think about a stop soon.')}
+  if(W.wet>.5&&S.tyre<3&&t-(F.wetT||-99)>45){F.wetT=t;radio('It is wet out there. We need inters or wets. Box.',{pri:1})}
+  else if(W.wet<.12&&S.tyre>=3&&t-(F.dryT||-99)>45){F.dryT=t;radio('Track is drying. Box for slicks when you can.')}
+  if(W.nx!==W.st&&W.at-W.tt<28&&F.wx!==W.at){F.wx=W.at;radio(WS[W.nx].n+' is coming in about '+Math.max(5,Math.round(W.at-W.tt))+' seconds.'+(WS[W.nx].rain>0&&W.rain<=0?' Prepare for the wet.':''))}
+  if(G.race){
+    const lap=clamp(Math.floor(Math.max(0,S.lapOffset+S.q.prog)/TR.N)+1,1,LAPS);
+    if(LAPS>1&&lap===LAPS&&!F.last){F.last=1;radio('Last lap. Bring it home.',{pri:1})}
+    if(t-engGapT>14&&!scActive()){engGapT=t;const g=engGap(),pos=standings().findIndex(r=>r.you)+1;
+      let m='';if(g.bh&&g.bh.t<1)m='Car behind is within a second. Defend.';else if(g.ah&&g.ah.t<1.2)m='Gap to the car ahead is '+g.ah.t.toFixed(1)+'. Keep pushing, DRS range.';
+      else if(pos!==engPos&&engPos)m=(pos<engPos?'Good job, you are P':'You are now P')+pos+'.'+(g.ah?' Gap ahead '+g.ah.t.toFixed(1)+'.':'');
+      else if(Math.random()<.35)m='P'+pos+'.'+(g.ah?' Gap ahead '+g.ah.t.toFixed(1)+'.':'')+(g.bh?' Behind '+g.bh.t.toFixed(1)+'.':'');
+      engPos=pos;if(m)radio(m)}}
+}
+G.rline=true;try{G.rline=localStorage.getItem('f1-line')!=='0'}catch(e){}
+const RL={n:150,pos:new Float32Array(150*18),col:new Float32Array(150*18),bp:null,bc:null};
+function drawRacingLine(){
+  if(!G.rline||G.mode!=='play'||G.pit||S.wreck||S.lane||G.pod)return;
+  if(!RL.bp){RL.bp=gl.createBuffer();RL.bc=gl.createBuffer()}
+  const N=TR.N,i0=S.q.i-8,w=.5;let v=0;
+  for(let k=0;k<RL.n;k++){const a=i0+k*2,b=a+2,ia=((a%N)+N)%N,ib=((b%N)+N)%N;
+    const dv=VTa[(ia+16)%N]-VTa[ia],c=dv<-3?[.95,.12,.08]:dv>3?[.1,.92,.3]:[.98,.84,.12];
+    const A1=trackPt(ia,LINE[ia]+w),A2=trackPt(ia,LINE[ia]-w),B1=trackPt(ib,LINE[ib]+w),B2=trackPt(ib,LINE[ib]-w);
+    const q=[A1,A2,B1,A2,B2,B1];for(const P_ of q){RL.pos[v]=P_[0];RL.pos[v+1]=.03;RL.pos[v+2]=P_[2];RL.col[v]=c[0];RL.col[v+1]=c[1];RL.col[v+2]=c[2];v+=3}}
+  gl.useProgram(P.p);gl.uniform1f(P.u.uQuant,0);gl.uniform1f(P.u.uNoise,0);gl.uniform1f(P.u.uMode,0);gl.uniform1f(P.u.uUseUni,0);gl.uniformMatrix4fv(P.u.uModel,false,ident());
+  gl.uniform4f(P.u.uMat,0,.9,.55,.5);
+  gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+  gl.bindBuffer(gl.ARRAY_BUFFER,RL.bp);gl.bufferData(gl.ARRAY_BUFFER,RL.pos,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(A.pos);gl.vertexAttribPointer(A.pos,3,gl.FLOAT,false,0,0);
+  gl.disableVertexAttribArray(A.nor);gl.vertexAttrib3f(A.nor,0,1,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,RL.bc);gl.bufferData(gl.ARRAY_BUFFER,RL.col,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(A.col);gl.vertexAttribPointer(A.col,3,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.TRIANGLES,0,v/3);
+  gl.enableVertexAttribArray(A.nor);gl.depthMask(true);gl.disable(gl.BLEND);gl.enable(gl.CULL_FACE)}
 let hudAcc=0;
 let lbAcc=0;
 function lbUpdate(dt){const el=$('lb');const on=G.mp&&G.race&&(G.mode==='play'||G.mode==='result');
@@ -1508,7 +1574,7 @@ function lbUpdate(dt){const el=$('lb');const on=G.mp&&G.race&&(G.mode==='play'||
   const rows=standings();let h='';
   rows.forEach((r,i)=>{h+='<div class="r'+(r.you?' you':'')+'"><span class="p">'+(i+1)+'</span><i style="background:'+rgb(r.col)+'"></i><span class="n">'+esc(r.name.slice(0,14))+'</span><span class="t">'+(r.dnf?'OUT':r.fin?'FIN':'')+'</span></div>'});
   if(el.innerHTML!==h)el.innerHTML=h;el.hidden=false;document.body.style.setProperty('--lbh',el.offsetHeight+'px')}
-function hud(dt){lbUpdate(dt);hudAcc+=dt;if(hudAcc<1/30)return;hudAcc=0;
+function hud(dt){lbUpdate(dt);engTick(dt);hudAcc+=dt;if(hudAcc<1/30)return;hudAcc=0;
   const kmh=Math.abs(S.vx*Math.sin(S.th)+S.vz*Math.cos(S.th))*3.6;G.speedKmh=kmh;
   $('spd').textContent=Math.round(kmh);
   const u=S.vx*Math.sin(S.th)+S.vz*Math.cos(S.th);
@@ -1552,6 +1618,7 @@ addEventListener('keydown',e=>{
   else if(e.code==='KeyR'&&G.mode==='play'){resetToTrack()}
   else if(e.code==='KeyP'||e.code==='Escape'){if(G.mode==='play')setPause(!G.paused)}
   else if(e.code==='KeyM'){muted=!muted;flash(muted?'Sound off':'Sound on')}
+  else if(e.code==='KeyL'){G.rline=!G.rline;try{localStorage.setItem('f1-line',G.rline?'1':'0')}catch(x){}flash(G.rline?'Racing line on':'Racing line off')}
   else if(e.code==='Space')e.preventDefault();
 });
 addEventListener('keyup',e=>{if(MAPK[e.code])keys[MAPK[e.code]]=false});
@@ -1690,6 +1757,7 @@ function render(dt,cm){
     gl.bindBuffer(gl.ARRAY_BUFFER,signMesh.bp);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
     gl.bindBuffer(gl.ARRAY_BUFFER,signMesh.bt);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);gl.disableVertexAttribArray(2);
     gl.drawArrays(gl.TRIANGLES,0,signMesh.n);gl.useProgram(P.p)}
+  drawRacingLine();
   // cars (player + rivals)
   const cars=[{c:S,liv:S.burn?charred(LIVERIES[0],Math.min(.55,S.burn.t/12)):LIVERIES[0],you:true,d2:0}];
   if(G.race&&G.mode!=='garage')for(const a of AI){const dx=a.x-camEye[0],dz=a.z-camEye[2],d2=dx*dx+dz*dz;if(d2<400*400&&(d2<900||dx*cm.la.fwd[0]+dz*cm.la.fwd[2]>-6))cars.push({c:a,liv:a.burn?charred(a.liv,Math.min(.6,a.burn.t/12)):a.liv,d2})}
@@ -1775,7 +1843,7 @@ function frame(now){
 }
 function startRace(race){
   G.mode='play';G.paused=false;G.racing=false;G.cdT=0;G.goFired=false;G.lightsOn=0;G.countdown=1;G.t=0;G.lapActive=false;G.lapNo=1;G.last=null;G.secPassed=0;G.sec=[null,null,null];
-  G.race=!!race;G.chRec=false;G.finished=false;G.cool=false;G.coolDone=0;G.resultShown=false;G.goT=0;G.finT=0;
+  G.race=!!race;G.chRec=false;radioReset();engGapT=0;engPos=0;G.finished=false;G.cool=false;G.coolDone=0;G.resultShown=false;G.goT=0;G.finT=0;
   setupGrid();skidClear();
   G.camYaw=S.th;S.rpm=4200;updateSectors();$('lights').classList.add('on');$('overlay').hidden=true;$('posRow').hidden=!G.race;
   S.wear=0;S.lane=false;S.limit=false;S.lift=0;S.pl0=-100;G.pit=null;LIVERIES[0].tyre=TY[S.tyre].c;$('pitMenu').hidden=true;aiStart();scReset();scPlan();
