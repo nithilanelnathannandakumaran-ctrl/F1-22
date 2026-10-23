@@ -296,7 +296,7 @@ button.go:hover:not(:disabled){filter:brightness(1.18)}
       <dt>R</dt><dd>Put the car back on the track</dd>
       <dt>Pit lane</dt><dd>Steer left into the pit entry, pull into your box beside the lane (80 km/h limit), pick tyres (1-5)</dd>
     </dl>
-    <div class="btns"><button class="go" id="goRace" disabled>Loading&hellip;</button><button class="go alt" id="goTA" disabled>Time attack</button><button class="go alt" id="goLiv">Livery</button><button class="go alt" id="goDrv">Driver</button><button class="go alt" id="goCh">Championship</button><button class="go alt" id="goMP">Multiplayer</button></div>
+    <div class="btns"><button class="go" id="goRace" disabled>Loading&hellip;</button><button class="go alt" id="goTA" disabled>Time attack</button><button class="go alt" id="goLiv">Livery</button><button class="go alt" id="goDrv">Driver</button><button class="go alt" id="goCh">Championship</button><button class="go alt" id="goMP">Multiplayer</button><button class="go alt" id="goAdm" hidden>Admin</button></div>
     <div class="btns" id="lapRow" style="margin-top:10px;align-items:center"><label class="fld" style="margin:0;display:flex;align-items:center;gap:10px">Race laps <input id="lapsIn" type="number" min="1" max="100" value="10" style="width:84px"></label><span class="sub" style="margin:0">1 to 100</span></div>
     <div class="btns" id="trkRow" style="margin-top:10px"></div>
     <div id="trkGrid" hidden></div>
@@ -1751,7 +1751,7 @@ function renderTrackGrid(){const r=$('trkRow'),g=$('trkGrid');r.innerHTML='';g.i
     trackPic(c.querySelector('canvas'),t,TCOL[i%TCOL.length]);
     c.onclick=()=>{if(lock){flash('Track locked','Finish round '+(i-1)+' in Championship','var(--signal)');return}if(i===TIDX)return;try{localStorage.setItem('f1-track',t.id)}catch(e){}location.reload()};g.appendChild(c)})}
 function trkInit(){lapsInit();renderTrackGrid()}
-function showOverlay(kind,info){$('trkRow').hidden=$('lapRow').hidden=kind!=='menu';$('trkGrid').hidden=kind!=='menu';$('overlay').classList.toggle('home',kind==='menu');$('overlay').hidden=false;$('goLiv').hidden=$('goDrv').hidden=$('who').hidden=$('goMP').hidden=$('goCh').hidden=kind!=='menu';const R=$('goRace'),T=$('goTA');
+function showOverlay(kind,info){$('trkRow').hidden=$('lapRow').hidden=kind!=='menu';$('trkGrid').hidden=kind!=='menu';$('overlay').classList.toggle('home',kind==='menu');$('overlay').hidden=false;$('goLiv').hidden=$('goDrv').hidden=$('who').hidden=$('goMP').hidden=$('goCh').hidden=kind!=='menu';$('goAdm').hidden=!(kind==='menu'&&ACC.admin);const R=$('goRace'),T=$('goTA');
   $('resTbl').hidden=kind!=='result';$('keys').hidden=kind==='result';
   if(kind==='menu'){$('ovTitle').innerHTML='F1 <em>22</em>';$('ovP').textContent='Race 18 rivals over '+LAPS+' laps in changing weather, or chase your best lap in time attack on '+TRK.name+' ('+(TR.len/1000).toFixed(1)+' km).';
     R.textContent='Race \u00b7 '+LAPS+' laps';R.dataset.act='race';T.textContent='Time attack';T.dataset.act='ta';$('sub').textContent=(TR.len/1000).toFixed(1)+' km \u00b7 3 sectors \u00b7 lap times save on this device'}
@@ -2061,6 +2061,7 @@ function mpTick(dt){
   if((G.mode==='play'||G.mode==='result')&&now-MP.sendT>66){MP.sendT=now;const r=n=>Math.round(n*100)/100;
     mpSend({t:'s',a:[r(S.x),r(S.z),r(S.th),r(Math.hypot(S.vx,S.vz)),r(S.lapOffset+S.q.prog),r(S.spin%1000),r(S.delta),S.tyre|0]})}}
 $('goMP').addEventListener('click',mpOpen);
+$('goAdm').addEventListener('click',()=>{window.open('/admin.html','_blank')});
 $('mpBack').addEventListener('click',mpClose);
 $('mpCreate').addEventListener('click',()=>{const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<4;i++)c+=A[Math.floor(Math.random()*A.length)];mpConnect(c,true)});
 $('mpJoin').addEventListener('click',()=>mpConnect($('mpCode').value.trim(),false));
