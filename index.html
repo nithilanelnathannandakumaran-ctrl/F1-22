@@ -775,9 +775,9 @@ const TR={c:[],t:[],l:[],k:[],N:0,len:0};
   for(let i=0;i<N;i++){const a=TR.t[(i-2+N)%N],b=TR.t[(i+2)%N];const cr=a[0]*b[1]-a[1]*b[0];TR.k.push(Math.asin(clamp(cr,-1,1))/(4*STEP))}
 })();
 /* DRS zones: the long straights. Detection point 20 steps before; zone opens a little after the start of the straight */
-const DRSZ=(function(){const N=TR.N,z=[],ok=i=>Math.abs(TR.k[((i%N)+N)%N])<.0015;let st=-1,i0=0;
+const DRSZ=(function(){const N=TR.N,z=[],ok=i=>Math.abs(TR.k[((i%N)+N)%N])<.0022;let st=-1,i0=0;
   while(i0<N&&ok(i0))i0++;   // start scanning at a curved point so runs never wrap
-  for(let n=0;n<=N;n++){const i=i0+n,e=ok(i)&&n<N;if(e){if(st<0)st=i}else{if(st>=0&&i-st>=70)z.push({a:st+8,b:i-8,det:st-18});st=-1}}
+  for(let n=0;n<=N;n++){const i=i0+n,e=ok(i)&&n<N;if(e){if(st<0)st=i}else{if(st>=0&&i-st>=42)z.push({a:st+6,b:i-6,det:st-16});st=-1}}
   return z})();
 const drsZone=i=>{const N=TR.N;i=((i%N)+N)%N;for(let k=0;k<DRSZ.length;k++){const z=DRSZ[k],r=(((i-z.a)%N)+N)%N;if(r<=z.b-z.a)return k}return -1};
 function trackPt(i,off){i=((i%TR.N)+TR.N)%TR.N;const c=TR.c[i],l=TR.l[i];return [c[0]+l[0]*off,0,c[1]+l[1]*off]}
@@ -1246,7 +1246,7 @@ const inp={thr:0,brk:0,steer:0};
 const keys={};
 function placeCar(i,off){const q=trackPt(i,off||0),t=TR.t[((i%TR.N)+TR.N)%TR.N];
   S.x=q[0];S.z=q[2];S.th=Math.atan2(t[0],t[1]);S.vx=S.vz=0;S.yaw=0;S.steer=0;S.delta=0;S.roll=S.pitch=0;S.hint=null;S.q=query(S.x,S.z,null);S.hint=S.q.i;G.prevProg=S.q.prog}
-function resetToTrack(){if(S.wreck){if(S.wreck.t<1.2)return;S.wreck=null;S.cr=null;S.det=null;S.roll=S.pitch=S.lift=0;S.vx=S.vz=0;S.yaw=0}const i=S.q?S.q.i:0;placeCar(i,0);S.lane=false;S.limit=false;G.pit=null;$('pitMenu').hidden=true;S.pl0=srOf(S.q.prog);G.lapActive=false;G.secPassed=0;G.sec=[null,null,null];updateSectors();flash('Reset')}
+function resetToTrack(){S.auto=null;if(S.wreck){if(S.wreck.t<1.2)return;S.wreck=null;S.cr=null;S.det=null;S.roll=S.pitch=S.lift=0;S.vx=S.vz=0;S.yaw=0}const i=S.q?S.q.i:0;placeCar(i,0);S.lane=false;S.limit=false;G.pit=null;$('pitMenu').hidden=true;S.pl0=srOf(S.q.prog);G.lapActive=false;G.secPassed=0;G.sec=[null,null,null];updateSectors();flash('Reset')}
 
 /* ---------- rivals + race ---------- */
 let LAPS=10;const lapsPref=()=>{let v=10;try{v=parseInt(localStorage.getItem('f1-laps'))||10}catch(e){}return clamp(v,1,100)};const NAI=18,GRID=Array.from({length:NAI+1},(_,k)=>[-5-4*k,k%2?-2.3:2.3]);let PSLOT=7;const SKILL=Array.from({length:NAI},(_,k)=>.975-k*.0065),LINEW=Array.from({length:NAI},(_,k)=>[.9,1,.85,.95,.8][k%5]);
@@ -1278,6 +1278,7 @@ function fxRealism(dt){
   if(G.race||G.mode==='play'){const u=Math.hypot(S.vx,S.vz);if(!S.wreck)car(S,u,inp.brk>.7&&u>40&&S.skid>.45,S.th)}
   if(G.race)for(const a of AI){if(a.gone||a.crash||a.crashed)continue;const dx=a.x-camEye[0],dz=a.z-camEye[2];if(dx*dx+dz*dz>90*90)continue;car(a,a.v,a.bk&&a.v>60&&Math.random()<.04,a.th)}
   if(G.racing&&!S.wreck&&S.q&&S.kerb&&Math.hypot(S.vx,S.vz)>48&&Math.random()<.22){const fx=Math.sin(S.th),fz=Math.cos(S.th),sd=Math.random()<.5?-.5:.5;fxEmit({t:'spark',x:S.x-fx*1.3+Math.cos(S.th)*sd,y:.08,z:S.z-fz*1.3-Math.sin(S.th)*sd,vx:-fx*6+(Math.random()-.5)*4,vy:1+Math.random()*2.5,vz:-fz*6+(Math.random()-.5)*4,life:.35+Math.random()*.35,s0:.12,s1:.04})}
+  if(G.racing&&!S.wreck&&!G.pit&&inp.thr>.92&&Math.hypot(S.vx,S.vz)<30&&Math.hypot(S.vx,S.vz)>1&&Math.random()<.35){const fx=Math.sin(S.th),fz=Math.cos(S.th),lx=Math.cos(S.th),lz=-Math.sin(S.th),rz=Math.min(META.wheels.RL.c[2],META.wheels.RR.c[2]);for(const sd of [-.75,.75])fxEmit({t:'tsmoke',x:S.x+lx*sd+fx*rz,y:.12,z:S.z+lz*sd+fz*rz,vx:-fx*2+(Math.random()-.5)*.8,vy:.5+Math.random()*.5,vz:-fz*2+(Math.random()-.5)*.8,life:.7+Math.random()*.4,s0:.3,s1:1.2+Math.random()*.6})}
   // rumble strips: the kerb shakes the camera a little
   if(G.racing&&!S.wreck&&S.q){const d=Math.abs(S.q.d);if(d>HW+.3&&d<KERB&&Math.hypot(S.vx,S.vz)>15)G.shake=Math.max(G.shake,.07)}
 }
@@ -1682,7 +1683,7 @@ function finishRace(){G.resultShown=true;G.mode='result';const rows=standings(),
 /* ---------- tyres, weather, pit lane, livery ---------- */
 const TY=[{n:'Soft',k:'S',c:[.9,.12,.12],g:1.05,wr:.0026,d:'Fast, wears quickly'},{n:'Medium',k:'M',c:[.96,.8,.1],g:1,wr:.0016,d:'Balanced'},{n:'Hard',k:'H',c:[.95,.95,.95],g:.955,wr:.0009,d:'Durable, slower'},{n:'Inter',k:'I',c:[.1,.72,.28],wr:.0022,d:'Damp track'},{n:'Wet',k:'W',c:[.15,.45,.95],wr:.0022,d:'Heavy rain'}];
 function tyreGrip(i,w){if(i<3)return TY[i].g*(1-.62*Math.pow(w,.9));if(i===3)return w<.5?.82+.36*w:1-.28*(w-.5);return .72+.27*w}
-function gripMul(){const tt=S.tt==null?.6:S.tt;return tyreGrip(S.tyre,W.wet)*(1-.4*Math.pow(S.wear,1.3))*(1-.14*W.wet)*(.89+.11*Math.min(1,tt/.55))*(1-.08*Math.max(0,tt-.93)*14)}
+function gripMul(){const tt=S.tt==null?.6:S.tt;return tyreGrip(S.tyre,W.wet)*(1-.4*Math.pow(S.wear,1.3))*(1-.14*W.wet)*(.89+.11*Math.min(1,tt/.55))*(1-.08*Math.max(0,tt-.93)*14)*(S.marb?.95:1)}
 const WS=[{n:'Clear',rain:0,cl:.05},{n:'Overcast',rain:0,cl:.65},{n:'Light rain',rain:.38,cl:.85},{n:'Heavy rain',rain:.95,cl:1}],WN=[[1],[0,2],[1,3],[2]];
 const W={st:0,nx:1,tt:0,at:50,rain:0,wet:0,cl:.05,si:1};
 const Z0=[.18,.38,.74],ZG=[.40,.43,.48],FG=[.52,.55,.58];
@@ -1711,6 +1712,13 @@ function pitUpdate(q){const sr=srOf(q.prog);let lo=-WALL,hi=WALL,tl=-KERB;
   return [lo,hi,tl]}
 function openPit(){$('pitMenu').hidden=false;$('pitSub').textContent=wxText();buildTyres($('pitTyres'),pitPick)}
 function pitPick(i){const p=G.pit;if(p&&p.phase==='choose'){p.pick=i;p.phase='work';p.t=0;$('pitMenu').hidden=true}}
+function pitAuto(u,q){const sr=srOf(q.prog),tt=TR.t[q.i];let dT,vT;
+  const ex=(a,b)=>{const r=clamp(sr,a,b);return -(pitEdge(r,'o')+pitEdge(r,'i'))/2};
+  if(sr<PE1)dT=ex(PE0,PE1);else if(sr<=PX0)dT=-(PLC+(PBC-PLC)*bayK(sr));else dT=ex(PX0,PX1);
+  if(S.auto==='in'){const dist=(PBOX-sr)*STEP;vT=dist>.3?Math.min(21,Math.sqrt(2*6*dist)+.6):0}
+  else{vT=21;if(sr>PX1-40){S.auto=null;flash('Your car','You have control \u00b7 push!','#35e07a');radio('You have control. Watch the traffic, go go go!',{pri:1});return [0,0,0]}}
+  const thT=Math.atan2(tt[0],tt[1])+clamp(.16*(dT-q.d),-.5,.5),err=vT-u;
+  return [clamp(err*.45,0,1),vT===0?(u>.05?1:0):clamp(-err*.6,0,1),clamp(-angDiff(thT,S.th)*2.4,-1,1)]}
 function pitLogic(dt,u){
   S.lift=lerp(S.lift||0,(G.pit&&G.pit.phase==='work')?.12:0,Math.min(1,dt*10));
   const sr=srOf(S.q.prog);
@@ -1723,7 +1731,7 @@ function pitLogic(dt,u){
   const p=G.pit;p.t+=dt;
   if(p.phase==='work'){if(!p.sw&&p.t>1.3){p.sw=1;S.tyre=p.pick;S.wear=0;S.tt=.45;S.aero=0;LIVERIES[0].tyre=TY[p.pick].c}
     if(p.t>2.6){p.phase='go';p.t=0;flash('Go go go')}}
-  else if(p.phase==='go'&&p.t>.5){G.pit=null;S.pitDone=true;S.pitCool=3}}
+  else if(p.phase==='go'&&p.t>.5){G.pit=null;S.pitDone=true;S.pitCool=3;if(S.auto){S.auto='out';radio('Pit stop complete. Get ready to take control, I will release you after the pit exit.',{pri:1})}}}
 /* rain streaks */
 const rc=$('rain'),rx=rc.getContext('2d'),DR=Array.from({length:260},()=>({x:Math.random(),y:Math.random(),l:.5+Math.random()}));
 function rainDraw(dt){const w=innerWidth,h=innerHeight;if(rc.width!==w||rc.height!==h){rc.width=w;rc.height=h}
@@ -1828,12 +1836,17 @@ function step(dt){
   let thr=inp.thr,brk=inp.brk,st=inp.steer;
   if(!G.racing){thr=0;brk=1;st=0}
   if(SCS.st==='red'&&!S.wreck&&!S.lane&&!G.pit){const uu=S.vx*Math.sin(S.th)+S.vz*Math.cos(S.th);brk=uu>9?1:0;thr=uu<6.5?.55:0}
+  if(!S.auto&&S.lane&&!S.pitDone&&G.racing&&!G.finished&&!S.wreck&&!S.autoSeen){S.auto='in';S.autoSeen=1;flash('Pit lane','Auto-pilot is driving \u00b7 pit limiter on','var(--signal)');radio('Pit lane limiter on. I have the car, we will put you in the box.',{pri:1})}
+  if(!S.lane&&!S.auto)S.autoSeen=0;
+  if(S.auto&&G.finished)S.auto=null;
+  if(S.auto){const c=pitAuto(u,S.q);thr=c[0];brk=c[1];st=c[2]}
   if(G.finished&&G.coolDone){thr=0;brk=u>.8?.6:0;const tt=TR.t[S.q.i],thT=Math.atan2(tt[0],tt[1]);st=clamp(-angDiff(thT,S.th)*1.6,-1,1)}   // parked in the pit lane: roll to a stop
   const au=Math.abs(u);
   // steering ramp (keys are digital); slower at speed
   const rate=(Math.abs(st)>.01?10:12)/(1+au/130);
   S.steer+=clamp(st-S.steer,-rate*dt,rate*dt);
-  const q=S.q,bw0=pitUpdate(q);S.onGrass=(q.d>(ST?WALL:KERB)||q.d<bw0[2])&&!(inMS(q.i)&&Math.abs(q.d)<=WALL)&&!inEsc(q.i,q.d);
+  const q=S.q,bw0=pitUpdate(q);S.marb=G.race&&S.lapOffset>=TR.N&&!S.lane&&Math.abs(q.d)<HW&&Math.abs(q.d-LINE[q.i])>4.2&&au>20;if(S.marb&&!S.marbT&&G.t-(S.marbR||-99)>40){S.marbR=G.t;S.marbT=1;radio('You are off the racing line, there is rubber and marbles out there. Less grip.',{pri:0})}if(!S.marb)S.marbT=0;
+  S.onGrass=(q.d>(ST?WALL:KERB)||q.d<bw0[2])&&!(inMS(q.i)&&Math.abs(q.d)<=WALL)&&!inEsc(q.i,q.d);
   {const es=inEsc(q.i,q.d)&&Math.abs(q.d)>KERB;S.esc=es}
   {// penalty only when the WHOLE car is beyond the edge line (all four wheels), and held for a moment
    const pushed=G.t-(S.contactT||-99)<5,whole=!pushed&&S.onGrass&&(q.d>KERB+1.15||q.d<bw0[2]-1.15)&&G.racing&&!G.finished&&!G.pit&&!S.lane&&!S.wreck&&Math.abs(S.vx*Math.sin(S.th)+S.vz*Math.cos(S.th))>6;
@@ -1848,7 +1861,10 @@ function step(dt){
    if(zi<0){let ap=false;for(const z of DRSZ)if((((S.q.i-z.det)%N_)+N_)%N_<=z.a-z.det)ap=true;if(!ap)S.drsOn=false}
    S.drsOk=!!(S.drsOn&&zi>=0&&!S.onGrass&&!S.lane&&au>30&&SCS.st==='none');
    if(S.drsOk&&!S.drsAnn){S.drsAnn=1;radio('DRS enabled. Hold Shift on the straight.',{who:'DRS'})}if(!S.drsOk)S.drsAnn=0;
-   S.drs=S.drsOk&&keys.drs&&!(inp.brk>0)}
+   S.drs=S.drsOk&&keys.drs&&!(inp.brk>0);
+   if(S.drs&&!S.drsPrev){flash('DRS ACTIVE','Rear wing open \u00b7 +20 km/h','#35e07a')}
+   else if(keys.drs&&!S.drsKey&&G.racing&&!G.finished&&!S.drsOk&&!S.lane)flash('DRS not available','Only in a DRS zone'+(G.race?' within 1 second of the car ahead':''),'var(--signal)');
+   S.drsPrev=S.drs;S.drsKey=!!keys.drs}
   S.tt=clamp((S.tt==null?.3:S.tt)+dt*((.03+.27*Math.min(1,Math.abs(S.ay||0)/20)+.3*(S.skid||0)+.1*inp.thr)-.31*(S.tt==null?.3:S.tt)),0,1);
   S.fuel=G.race?Math.max(0,1-(S.lapOffset+S.q.prog)/(LAPS*TR.N)):.35;
   const mu=(S.onGrass?.62:2.15)*gripMul(),DF=(1+Math.pow(Math.min(au,100)/62,2))*(1-.13*S.ss)*(1-.28*(S.aero||0)),maxLat=mu*9.81*DF;
@@ -1869,7 +1885,7 @@ function step(dt){
   // single-track tyre model: slip angles, weight transfer, friction ellipse (power oversteer, lift-off, trail braking)
   {const M=800*(1+.09*S.fuel),IZ=1000,LA=1.8,LB=1.75,Hc=.32,Fz=M*9.81*DF,tr=M*a*Hc/WY,ue=Math.max(u,3);
    const Fzf=Math.max(Fz*.15,Fz*LB/WY-tr),Fzr=Math.max(Fz*.15,Fz*LA/WY+tr);
-   const Fxr=a>0?M*a:Math.max(M*a*.3,-.85*mu*Fzr),Fxf=a<0?M*a*.7:0;
+   const Fxr=a>0?M*a:Math.max(M*a*.3,-.85*mu*Fzr)*.45,Fxf=a<0?M*a*.7:0;
    const ell=(fx,fz)=>Math.sqrt(Math.max(.05,1-Math.pow(fx/(mu*fz),2)));
    const af=Math.atan2(vl+LA*r,ue)-dph,ar=Math.atan2(vl-LB*r,ue);
    // push it too hard into a fast corner and the rear lets go: grip collapses past a slip angle, so the car snaps round (spin)
@@ -1879,7 +1895,7 @@ function step(dt){
    const Fyf=ty(af,capF),Fyr=tyR(ar,capR),cd=Math.cos(dph);
    const ayb=(Fyf*cd+Fyr)/M;
    vl+=(ayb-u*r)*dt;u+=(vl*r-Fyf*Math.sin(dph)/M)*dt;
-   r+=((LA*Fyf*cd-LB*Fyr)/IZ-r*.45)*dt;
+   r+=((LA*Fyf*cd-LB*Fyr)/IZ-r*(.45+(a<-2?1.7*Math.min(1,-a/18):0)))*dt;
    const w=clamp((u-4)/6,0,1);   // blend to a kinematic model at crawl speeds
    if(w<1){const rk=u*Math.tan(dph)/WY;r+=(rk-r)*(1-w)*Math.min(1,dt*20);vl*=1-(1-w)*Math.min(1,dt*10)}
    S.ay=ayb;S.slipF=af;S.slipR=ar;
@@ -1944,7 +1960,7 @@ function lapLogic(){
 }
 const fsec=t=>t>=60?fmt(t):t.toFixed(3);
 function sectorDone(k,t){const prevBest=G.bestSec[k];const rec=prevBest==null||t<prevBest;G.sec[k]=rec?'purple':'yellow';G.secT=G.secT||[null,null,null];G.secT[k]=t;
-  if(k<2&&G.racing&&!G.finished){flash('S'+(k+1)+'  '+fsec(t),rec?(prevBest==null?'First time through':'Purple sector  -'+(prevBest-t).toFixed(3)):'+'+(t-prevBest).toFixed(3)+' off your best',rec?'var(--purple)':'var(--signal)');if(rec&&prevBest!=null)radio('Purple sector '+(k+1)+'. Good job.',{pri:0})}if(rec){G.bestSec[k]=t;try{localStorage.setItem('apex-sec'+TSUF,JSON.stringify(G.bestSec))}catch(e){}}updateSectors()}
+  if(k<2&&G.racing&&!G.finished){if(rec&&prevBest!=null)radio('Purple sector '+(k+1)+'. Good job.',{pri:0})}if(rec){G.bestSec[k]=t;try{localStorage.setItem('apex-sec'+TSUF,JSON.stringify(G.bestSec))}catch(e){}}updateSectors()}
 function lapDone(t){if(G.ses==='Q'&&(G.qBest==null||t<G.qBest))G.qBest=t;const rec=G.best==null||t<G.best;const prev=G.best;G.last=t;G.lastRec=rec;if(rec&&G.cur&&G.cur.length>20)G.bestTr=G.cur.slice();if(rec){G.best=t;try{localStorage.setItem('apex-best'+TSUF,String(t))}catch(e){}}
   if(G.racing&&!G.finished)radio('Lap time '+fmt(t)+(rec?(prev==null?'. First lap on the board.':'. That is a personal best.'):'. '+(t-prev).toFixed(2)+' off your best.'),{pri:0});
   G.lapNo++;flash(fmt(t),rec?(prev==null?'First lap':'New best  -'+(prev-t).toFixed(3)):'+'+(t-prev).toFixed(3),rec?'var(--purple)':'var(--signal)')}
@@ -1975,6 +1991,7 @@ function audioUpdate(thr){if(!AC)return;const t=AC.currentTime;const r=S.rpm;
     else A_.rg.gain.setTargetAtTime(0,t,.1)}
   const f=r/60*3;A_.o1.frequency.setTargetAtTime(f,t,.03);A_.o2.frequency.setTargetAtTime(f*.5,t,.03);A_.o3.frequency.setTargetAtTime(f*4,t,.03);
   A_.g.gain.setTargetAtTime((.10+.22*thr)*(muted?0:1),t,.05);A_.lp.frequency.setTargetAtTime(900+r*.25+thr*900,t,.05);
+  if(A_.pthr==null){A_.pthr=0;A_.pop=0}if(A_.pthr>.7&&thr<.2&&r>8500&&G.racing&&A_.pop<1&&!muted){A_.pop=1;const n=3+Math.floor(Math.random()*4);for(let i=0;i<n;i++){const tp=t+i*(.05+Math.random()*.06);A_.ng.gain.setValueAtTime(.55,tp);A_.ng.gain.setValueAtTime(.05,tp+.025)}}if(thr>.4)A_.pop=0;A_.pthr=thr;
   const wind=Math.min(1,Math.abs(G.speedKmh)/320);
   A_.ng.gain.setTargetAtTime(((S.skid*.5+wind*.12)+(S.onGrass?.18*Math.min(1,G.speedKmh/80):0)+S.hit*.6)*(muted?0:1),t,.05);
   A_.nbp.frequency.setTargetAtTime(S.skid>.1?2200:600+wind*1800,t,.08)}
@@ -1991,7 +2008,7 @@ const RD={until:0,flags:{}};
 function radio(msg,o){o=o||{};const now=performance.now();if(!o.pri&&now<RD.until)return;
   const e=$('radio');$('radioWho').textContent=o.who||'Race engineer';$('radioTx').textContent=msg;e.className=o.cls||'';e.hidden=false;
   e.style.animation='none';void e.offsetWidth;e.style.animation='';RD.until=now+(o.dur||4200);clearTimeout(RD.tm);RD.tm=setTimeout(()=>{e.hidden=true},o.dur||4200)}
-function radioReset(){PF.blue=0;PF.bw=0;PF.black=0;PF.bwDone=false;PF.dsq=false;PF.blueT=-99;S.dsq=false;$('pFlag').hidden=true;RD.flags={};S.mad=0;RD.nagT=-99;RD.chat=-99;RD.lapSeen=0;RD.until=0;$('radio').hidden=true;S.offs=0;S.colN=0;S.pen=0;S.offT=-99;S.offPrev=false;S.pitW=0}
+function radioReset(){S.auto=null;S.autoSeen=0;PF.blue=0;PF.bw=0;PF.black=0;PF.bwDone=false;PF.dsq=false;PF.blueT=-99;S.dsq=false;$('pFlag').hidden=true;RD.flags={};S.mad=0;RD.nagT=-99;RD.chat=-99;RD.lapSeen=0;RD.until=0;$('radio').hidden=true;S.offs=0;S.colN=0;S.pen=0;S.offT=-99;S.offPrev=false;S.pitW=0}
 function trackLimits(){S.offs=(S.offs||0)+1;const o={who:'Stewards',pri:1,cls:'pen',dur:6500};
   if(!G.race){G.lapActive=false;updateSectors();radio('Track limits exceeded. Lap time deleted.',o);return}
   if(S.offs<=3){radio('Track limits warning '+S.offs+' of 3. The whole car was off the track. After that, every offence is a 5 second penalty.',o);engMad(1);return}
@@ -2127,11 +2144,11 @@ function hud(dt){lbUpdate(dt);engTick(dt);pFlagTick(dt);hudAcc+=dt;if(hudAcc<1/3
   if(G.race){const tot=S.lapOffset+S.q.prog;$('lapNo').textContent=clamp(Math.floor(Math.max(tot,0)/TR.N)+1,1,LAPS)+'/'+LAPS;const st=standings();$('pos').textContent=(st.findIndex(r=>r.you)+1)+'/'+st.length}else $('lapNo').textContent=G.lapNo;
   $('posRow').hidden=!G.race;$('tLast').textContent=fmt(G.last);$('tLast').className='val '+(G.last==null?'':G.lastRec?'purple':'yellow');$('tBest').textContent=fmt(G.best);
   $('tyreV').textContent=TY[S.tyre].k+' '+Math.round(S.wear*100)+'% \u00b7 '+Math.round(40+(S.tt==null?.3:S.tt)*75)+'\u00b0';
-  {const zb=$('drsBan'),inZ=G.racing&&!G.finished&&G.t-(G.goT||0)>3&&Math.hypot(S.vx,S.vz)>8&&drsZone(S.q.i)>=0;zb.hidden=!inZ;if(inZ){zb.className=S.drs?'on':S.drsOk?'rdy':'';zb.textContent=S.drs?'DRS open':S.drsOk?'DRS enabled \u00b7 hold shift':'DRS zone'}}
+  {const zb=$('drsBan'),inZ=G.racing&&!G.finished&&G.t-(G.goT||0)>3&&Math.hypot(S.vx,S.vz)>8&&drsZone(S.q.i)>=0;zb.hidden=!inZ;if(inZ){zb.className=S.drs?'on':S.drsOk?'rdy':'';zb.textContent=S.drs?'DRS ACTIVE':S.drsOk?'DRS enabled \u00b7 hold shift':'DRS zone'}}
   {const d=$('drsRow');d.hidden=!(S.drs||S.drsOk);$('drsV').textContent=S.drs?'OPEN':'SHIFT';const dl=G.dlt;$('dltRow').hidden=dl==null||!G.lapActive;if(dl!=null){$('dltV').textContent=(dl>=0?'+':'-')+Math.abs(dl).toFixed(2);$('dltV').style.color=dl>0?'var(--signal)':'#35c46a'}}$('tyreV').style.color=rgb(TY[S.tyre].c);
   $('wxV').textContent=WS[W.st].n;$('trkV').textContent=W.wet<.1?'Dry':W.wet<.4?'Damp':W.wet<.75?'Wet':'Soaked';
   $('fcV').textContent=G.mp?'Steady':WS[W.nx].n+' '+Math.max(0,Math.round(W.at-W.tt))+'s';
-  {const tg=$('pitTag');let t='';if(S.lane){t=G.pit?'Pit stop':Math.abs(srOf(S.q.prog)-PBOX)<2.6?(S.pitDone?'Go! Leave the box':'Stop in the box'):'Pit lane \u00b7 80 km/h'}else if(S.limit)t='Pit lane \u00b7 80 km/h';else if(G.finished&&G.cool&&!G.coolDone)t=S.dsq?'Disqualified \u00b7 enter the pits':'Celebration lap \u00b7 enter the pits or press Enter';tg.hidden=!t;tg.textContent=t;$('skipCel').hidden=!(G.finished&&G.cool&&!G.coolDone&&!G.resultShown)}
+  {const tg=$('pitTag');let t='';if(S.auto==='out')t='Get ready to take control';else if(S.auto==='in'&&!G.pit)t='Auto-pilot \u00b7 pit lane';else if(S.lane){t=G.pit?'Pit stop':Math.abs(srOf(S.q.prog)-PBOX)<2.6?(S.pitDone?'Go! Leave the box':'Stop in the box'):'Pit lane \u00b7 80 km/h'}else if(S.limit)t='Pit lane \u00b7 80 km/h';else if(S.auto==='out')t='Get ready to take control';else if(S.auto==='in')t='Auto-pilot \u00b7 pit lane';else if(G.finished&&G.cool&&!G.coolDone)t=S.dsq?'Disqualified \u00b7 enter the pits':'Celebration lap \u00b7 enter the pits or press Enter';tg.hidden=!t;tg.textContent=t;$('skipCel').hidden=!(G.finished&&G.cool&&!G.coolDone&&!G.resultShown)}
   drawMap();
 }
 const mapCv=$('map'),mctx=mapCv.getContext('2d');let mapBase=null,mapT=null;
@@ -2624,7 +2641,7 @@ try{
   loadModel();initAtlas();numInit();initMeshes();initGround();skidInit();scmInit();buildMap();resize();
   trkInit();initAI();G.race=true;setupGrid();G.camYaw=S.th;G.cam=0;showOverlay('menu');boot();
 }catch(err){console.error(err);$('sub').textContent='Could not start: '+err.message}
-window.__apex={podFlagInit,ACC,FR,frOpen,showOverlay,chOpen,chStart,chLaunch,getCH:()=>CH,LIV:LIVERIES,FX,fxTick,POD,podW,MARSH,finishRace,SCS,scPlan,crashStart,resetToTrack,srOf,W,DRV,TY,S,G,inp,TR,step,query,startRace,keys,AI,LAPS,VTa,LINE,BRAKE,standings,skidBuf,skidUpdate,LIVERIES,toMenu};
+window.__apex={placeCar,pitAuto,podFlagInit,ACC,FR,frOpen,showOverlay,chOpen,chStart,chLaunch,getCH:()=>CH,LIV:LIVERIES,FX,fxTick,POD,podW,MARSH,finishRace,SCS,scPlan,crashStart,resetToTrack,srOf,W,DRV,TY,S,G,inp,TR,step,query,startRace,keys,AI,LAPS,VTa,LINE,BRAKE,standings,skidBuf,skidUpdate,LIVERIES,toMenu};
 requestAnimationFrame(frame);
 })();
 </script>
