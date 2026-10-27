@@ -310,7 +310,7 @@ button.go:hover:not(:disabled){filter:brightness(1.18)}
   <div class="mapbox panel"><canvas id="map" width="360" height="300"></canvas><div id="lb" hidden></div></div>
   <div id="radio" hidden><b id="radioWho">Race engineer</b><span id="radioTx"></span></div>
   <div class="lights panel" id="lights"><i></i><i></i><i></i><i></i><i></i></div>
-  <button id="spinBtn" hidden style="position:absolute;right:16px;bottom:205px;z-index:6;padding:10px 22px;font:900 italic 18px var(--display);letter-spacing:.08em;text-transform:uppercase;background:#ffd23f;color:#111;border:2px solid #111;cursor:pointer">Spin the car &middot; Space</button><button id="skipCel" hidden style="position:absolute;right:16px;bottom:150px;z-index:6;padding:10px 22px;font:900 italic 18px var(--display);letter-spacing:.08em;text-transform:uppercase;background:#e10600;color:#fff;border:2px solid #fff;cursor:pointer">Go to pits now &middot; Enter</button><div id="spdVig" style="position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 52%,rgba(0,0,0,.55) 100%)"></div><div class="pflag" id="pFlag" hidden><div class="fl" id="pFlagFl"></div><span id="pFlagTx"></span></div><div id="mirror" hidden><span>REAR</span></div><div id="drsBan" hidden></div><div class="msg" id="msg"></div><div class="flagbar" id="flagBar" hidden></div>
+  <button id="spinBtn" hidden style="position:absolute;right:16px;bottom:205px;z-index:6;padding:10px 22px;font:900 italic 18px var(--display);letter-spacing:.08em;text-transform:uppercase;background:#ffd23f;color:#111;border:2px solid #111;cursor:pointer">Spin the car &middot; Space</button><button id="skipCel" hidden style="position:absolute;right:16px;bottom:150px;z-index:6;padding:10px 22px;font:900 italic 18px var(--display);letter-spacing:.08em;text-transform:uppercase;background:#e10600;color:#fff;border:2px solid #fff;cursor:pointer">Go to pits now &middot; Enter</button><div id="spdVig" style="position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 52%,rgba(0,0,0,.55) 100%)"></div><div id="lflash" style="position:absolute;inset:0;pointer-events:none;z-index:4;background:#dfe8ff;opacity:0"></div><div class="pflag" id="pFlag" hidden><div class="fl" id="pFlagFl"></div><span id="pFlagTx"></span></div><div id="mirror" hidden><span>REAR</span></div><div id="drsBan" hidden></div><div class="msg" id="msg"></div><div class="flagbar" id="flagBar" hidden></div>
   <div class="tag panel" id="pitTag" hidden></div>
   <div class="pitmenu panel" id="pitMenu" hidden><h2>Pit stop · pick tyres</h2><div class="tyres" id="pitTyres"></div><div class="sub" id="pitSub"></div></div>
   <div class="cluster panel">
@@ -448,7 +448,7 @@ precision highp float;
 precision mediump float;
 #endif
 varying vec3 vN,vW,vC,vL;
-uniform vec3 uSun,uCam,uFog,uMatCol,uAcc;uniform float uFogDen,uNoise,uMode,uUseUni,uWet,uSI,uDesign,uAmb,uEm;uniform vec4 uMat;
+uniform vec3 uSun,uCam,uFog,uMatCol,uAcc,uAcc2;uniform float uFogDen,uNoise,uMode,uUseUni,uWet,uSI,uDesign,uAmb,uEm;uniform vec4 uMat;
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}
 vec3 sky(vec3 d){float t=clamp(d.y,0.,1.);vec3 z=vec3(.18,.38,.74),hz=uFog;vec3 c=mix(hz,z,pow(t,.55));
@@ -509,7 +509,25 @@ float dmask(vec3 p,float d){float x=p.x,z=p.z,m=0.;
  else if(d<52.5)m=step(h21(floor(vec2(x,z)/.1)),smoothstep(1.8,-1.4,z));   // pixel dissolve
  else if(d<53.5){float k=h21(floor(vec2(x,z)/.1));vec2 f=fract(vec2(x,z)/.1)-.5;m=max(step(.88,k)*(1.-smoothstep(.0,.2,length(f)-.12)),smoothstep(1.4,2.,z));}   // starfield
  else if(d<54.5)m=mod(floor(x/.14)+floor(z/.14),2.)*smoothstep(0.,-1.2,z);   // chequered fade
- else {float w=sin(z*3.+x*4.)*.5+sin(z*7.-x*3.)*.25;m=(1.-smoothstep(.0,.05,abs(fract(w*1.5+z*.8)-.5)-.2))*smoothstep(-1.5,1.,z);}   // aurora
+ else if(d<55.5){float w=sin(z*3.+x*4.)*.5+sin(z*7.-x*3.)*.25;m=(1.-smoothstep(.0,.05,abs(fract(w*1.5+z*.8)-.5)-.2))*smoothstep(-1.5,1.,z);}   // aurora
+ else {float A=0.,B=0.;vec2 q=vec2(x,z);float k=d-55.5;
+  if(k<1.){A=1.-smoothstep(.1,.13,abs(x));B=mod(floor(x/.09)+floor(z/.09),2.)*smoothstep(1.2,1.8,z);}   // stripe + chequered nose
+  else if(k<2.){A=smoothstep(-.05,.05,x);B=smoothstep(.2,-1.6,z)*(1.-A);}   // split with rear fade
+  else if(k<3.){float f=fract(z/.6);A=step(.34,f)*step(f,.67);B=step(.67,f);}   // tri bands
+  else if(k<4.){A=mod(floor((x+z)/.05),2.)*.8;B=1.-smoothstep(.0,.015,abs(fract(x/.3)-.5)-.47);}   // carbon with colour lines
+  else if(k<5.){float bz=abs(fract(z*1.4+abs(x)*3.)-.5);A=1.-smoothstep(.0,.04,bz-.2);B=1.-smoothstep(.0,.03,abs(bz-.3)-.03);}   // lightning
+  else if(k<6.){float n=vn(q*3.2)*.6+vn(q*9.)*.4;A=smoothstep(.45,.5,n);B=smoothstep(.62,.66,n);}   // tri camo
+  else if(k<7.){float f=abs(fract((z+abs(x)*1.2)/.8)-.5);A=1.-smoothstep(.0,.02,f-.2);B=1.-smoothstep(.0,.02,abs(f-.27)-.025);}   // chevron stack
+  else if(k<8.){float r=length(vec2(abs(x)-.5,z-.1));A=1.-smoothstep(.17,.19,r);B=1.-smoothstep(.0,.02,abs(r-.25)-.03);}   // number roundel
+  else if(k<9.){float fl=p.y-(.25+(.5+.5*sin(z*9.))*.45*(.6+.4*sin(z*3.)));A=1.-smoothstep(.0,.03,fl);B=1.-smoothstep(.0,.03,abs(fl+.05)-.04);}   // flame edge
+  else if(k<10.){float w1=abs(fract((x+sin(z*5.)*.12)/.3)-.5),w2=abs(fract((x+sin(z*5.+1.)*.12)/.3+.25)-.5);A=1.-smoothstep(.0,.03,w1-.12);B=1.-smoothstep(.0,.03,w2-.05);}   // layered waves
+  else if(k<11.){vec2 g=q/.2,r=vec2(1.,1.732),h=r*.5,a=mod(g,r)-h,b=mod(g-h,r)-h;vec2 gg=dot(a,a)<dot(b,b)?a:b;float e=.5-max(abs(gg.x)*.866+abs(gg.y)*.5,abs(gg.y));A=1.-smoothstep(.02,.06,e);B=step(.82,h21(floor(g+gg*0.)))*smoothstep(.06,.1,e);}   // hex with filled cells
+  else if(k<12.){A=smoothstep(-1.4,1.8,x*1.1+z*.9);B=smoothstep(.6,1.2,x*1.1+z*.9);}   // diagonal gradient sweep
+  else if(k<13.){A=1.-smoothstep(.0,.015,abs(fract(x/.12)-.5)-.1);B=smoothstep(1.,1.6,z);}   // pinstripes with nose cap
+  else if(k<14.){float dd=abs(fract((x+z)/.4)-.5)+abs(fract((x-z)/.4)-.5);A=1.-smoothstep(.0,.03,dd-.5);B=1.-smoothstep(.0,.03,dd-.18);}   // nested diamonds
+  else if(k<15.){float hv=h21(floor(vec2(x/.25,z/.25)));A=step(.5,hv);B=step(.82,hv);}   // block pattern
+  else {float cx=h21(floor(q/.17));A=clamp(step(.5,cx)*(1.-smoothstep(.0,.02,abs(fract(x/.17)-.5)-.04))+step(cx,.5)*(1.-smoothstep(.0,.02,abs(fract(z/.17)-.5)-.04)),0.,1.);B=step(.9,cx)*(1.-smoothstep(.0,.2,length(fract(q/.17)-.5)-.12));}   // circuit nodes
+  return A*(1.-B)+2.*B;}
  return m;}
 void main(){
  if(uMode>2.5){float r=length(vC.xy);float a=pow(1.-clamp(r,0.,1.),1.5)*uMat.w;gl_FragColor=vec4(uMatCol,a);return;}
@@ -517,7 +535,7 @@ void main(){
  if(uMode>.5){float r=length(vC.xy);gl_FragColor=vec4(0.,0.,0.,.5*(1.-smoothstep(.25,1.,r)));return;}
  if(vC.r>1.9){float fe=1.-exp(-pow(length(uCam-vW)*uFogDen,1.6));vec3 e=pow(vC-2.,vec3(2.2))*uEm;gl_FragColor=vec4(pow(mix(e,pow(uFog,vec3(2.2)),clamp(fe,0.,1.)),vec3(1./2.2)),1.);return;}
  vec3 N=normalize(vN),V=normalize(uCam-vW),L=normalize(uSun);
- vec3 base=uUseUni>.5?uMatCol:vC; if(uDesign>.5)base=mix(base,uAcc,dmask(vL,uDesign)); base=pow(base,vec3(2.2))*(1.-.34*uWet);
+ vec3 base=uUseUni>.5?uMatCol:vC; if(uDesign>.5){float dm=dmask(vL,uDesign);base=mix(base,uAcc,min(dm,1.));base=mix(base,uAcc2,clamp(dm-1.,0.,1.));} base=pow(base,vec3(2.2))*(1.-.34*uWet);
  if(uNoise>0.){float n=vn(vW.xz*.7)*.5+vn(vW.xz*3.1)*.3+vn(vW.xz*13.)*.2;base*=1.+uNoise*(n-.5)*.55;
   float dd=length(uCam-vW),lod=1.-smoothstep(28.,150.,dd);
   float lum=dot(vC,vec3(.3,.55,.15)),sat=max(vC.r,max(vC.g,vC.b))-min(vC.r,min(vC.g,vC.b));
@@ -1619,7 +1637,7 @@ function scPlan(){
     if(Math.abs(km)>bk&&!inEsc(i,1)&&!inEsc(i,-1)&&!inEsc(i+30,1)&&!inEsc(i+30,-1)&&!inEsc(i-30,1)&&!inEsc(i-30,-1)){bk=Math.abs(km);best=i}}
   if(best<0){SCS.plan=null;return}
   let km=0;for(let j=-6;j<=6;j++)km+=TR.k[(best+j+N)%N];
-  SCS.plan={k:5,i:best,side:km>=0?1:-1,lap:1+(LAPS>3&&Math.random()<.5?1:0),done:false,pair:false,mate:null};
+  SCS.plan={k:5,i:best,side:km>=0?1:-1,lap:1+(LAPS>3&&Math.random()<.5?1:0),done:false,pair:false,multi:Math.random()<.1,grp:null,mate:null};
   SCS.sec=Math.min(2,Math.floor(best/(N/3)))}
 function scCreate(){
   const liv={name:'SC',paint:[.95,.78,.04],accent:[.05,.05,.05],tyre:[.9,.9,.9],rim:[.1,.1,.1]};
@@ -1631,17 +1649,21 @@ function scDof(c){
   if(sr>PX1&&sr<PX1+60&&c.ring){const f=smooth01((sr-PX1)/55);return lerp(-PEDGE0,LINE[i]*.6,f)}
   return LINE[i]*.6}
 function redStart(){const sc=SCS;sc.st='red';sc.t=0;sc.redAt=G.t;sc.cleared=false;
-  flash('Red flag','Two cars down \u00b7 race suspended','#e10600');flagBar('Red flag','Track blocked \u00b7 race suspended \u00b7 crawl slowly round','red')}
+  flash('Red flag',(SCS.plan&&SCS.plan.multi?'Multi-car crash':'Two cars down')+' \u00b7 race suspended','#e10600');flagBar('Red flag','Track blocked \u00b7 race suspended \u00b7 crawl slowly round','red')}
 function scUpdate(dt){
   if(!G.race||G.mp)return;const N=TR.N;
   const sc=SCS;
   // the scripted crash: one mid-pack car loses it on a corner and hits the barrier
   if(sc.plan&&!sc.plan.done&&sc.st==='none'){const a=AI[sc.plan.k];
     if(a&&!a.crash&&!a.pit&&!a.fin&&a.s>=sc.plan.lap*N+sc.plan.i-45&&a.s<sc.plan.lap*N+sc.plan.i+60){a.crash=1;a.ct=0;a.cside=sc.plan.side;a.yawV=0;
+      if(sc.plan.multi){const cand=AI.filter(o=>o!==a&&!o.crash&&!o.pit&&!o.fin&&!o.gone).map(o=>({o,d:Math.abs(o.s-a.s)*STEP})).filter(e=>e.d<70).sort((x,y)=>x.d-y.d).slice(0,4);
+        sc.plan.grp=[a];cand.forEach((e,j)=>{const b=e.o;b.crash=1;b.ct=-.1-j*.12;b.cside=sc.plan.side;b.yawV=0;sc.plan.grp.push(b)});
+        flash('Multi-car crash','Several cars are down','#e10600');radio('Big crash ahead! Multiple cars involved! Slow down, slow down!',{pri:2,who:'Race control'})}
       if(sc.plan.pair){let b=null,bd=1e9;for(const o of AI){if(o===a||o.crash||o.pit||o.fin)continue;const d=Math.abs(o.s-a.s)*STEP;if(d<34&&d<bd){bd=d;b=o}}
         if(b){b.crash=1;b.ct=-.25;b.cside=sc.plan.side;b.yawV=0;sc.plan.mate=b}}}}
   if(sc.plan&&!sc.plan.done&&sc.st==='none'){const pr=sc.plan,n2=AI.filter(a=>a.crash===2).length;
-    if(pr.mate){if(n2>=2&&!AI.some(a=>a.crash===1)){pr.done=true;redStart()}}
+    if(pr.multi&&pr.grp){if(pr.grp.length>=3&&pr.grp.every(g=>g.crash===2||g.crashed)&&!AI.some(a=>a.crash===1)){pr.done=true;redStart()}}
+    else if(pr.mate){if(n2>=2&&!AI.some(a=>a.crash===1)){pr.done=true;redStart()}}
     else if(n2>=1){pr.done=true;sc.st='yellow';sc.t=0;
       flash('Yellow flag','Sector '+(sc.sec+1)+' · car in the barrier','#f5d90a');flagBar('Yellow flag','Sector '+(sc.sec+1)+' · no overtaking, be ready to stop','blink')}}
   if(sc.st==='red'){sc.t+=dt;
@@ -1831,8 +1853,8 @@ const PRE=[['#0d1f6b','#e11b22','#d4a937'],['#d6141c','#f2efe6','#c9ccd1'],['#f5
 ['#101010','#d4af37','#d4af37'],['#f4f4f4','#d6141c','#101010'],['#0aa5a5','#ff4f9a','#e8e8e8'],['#ff7a00','#101010','#c9ccd1'],['#b9bec7','#1450c0','#101010'],['#9be21a','#4b1d8f','#101010'],['#6d0f1d','#f1e6c8','#d4a937'],['#0b1b3a','#ffffff','#c9ccd1'],['#1e90ff','#ffe400','#101010'],['#2b2b2b','#ff2d2d','#ff2d2d'],['#e8d8b0','#2f6f3e','#8a6a2a'],['#7a0bc0','#00e5ff','#e8e8e8']];
 const hex2=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255),tohex=c=>'#'+c.map(v=>Math.round(clamp(v,0,1)*255).toString(16).padStart(2,'0')).join('');
 try{const sv=JSON.parse(localStorage.getItem('f1-livery')||'null');if(sv&&sv.length===3){const L=LIVERIES[0];L.paint=hex2(sv[0]);L.accent=hex2(sv[1]);L.rim=hex2(sv[2])}}catch(e){}
-const DESIGNS=['Solid','Centre stripe','Twin stripes','Chevrons','Split','Hoops','Checker','Fade','Slash','Pinstripes','Diagonal bands','Dots','Camo','Flames','Waves','Zigzag','Side fade','Rear fade','Race bands','Triple stripe','Tiger','Diamond check','Stars','Roof fade','Lattice','Nose chevron','Gold dust','Clouds','Edge sides','Wing tips','Barcode','Plaid','Rings','Speed lines','Lava','Scales','Weave','Sunburst','Carbon twill','Hex mesh','Digital camo','Stripe chevron','Shark teeth','Circuit board','Marble','Brush strokes','Halftone','Topographic','Wings','Flame gradient','Tribal','Dragon scales','Pixel fade','Starfield','Chequer fade','Aurora'];
-try{LIVERIES[0].design=clamp(parseInt(localStorage.getItem('f1-design'))||0,0,55)}catch(e){}
+const DESIGNS=['Solid','Centre stripe','Twin stripes','Chevrons','Split','Hoops','Checker','Fade','Slash','Pinstripes','Diagonal bands','Dots','Camo','Flames','Waves','Zigzag','Side fade','Rear fade','Race bands','Triple stripe','Tiger','Diamond check','Stars','Roof fade','Lattice','Nose chevron','Gold dust','Clouds','Edge sides','Wing tips','Barcode','Plaid','Rings','Speed lines','Lava','Scales','Weave','Sunburst','Carbon twill','Hex mesh','Digital camo','Stripe chevron','Shark teeth','Circuit board','Marble','Brush strokes','Halftone','Topographic','Wings','Flame gradient','Tribal','Dragon scales','Pixel fade','Starfield','Chequer fade','Aurora','Stripe + chequer','Split + fade','Tri bands','Carbon lines','Lightning','Tri camo','Chevron stack','Roundel','Flame edge','Layered waves','Hex cells','Gradient sweep','Pinstripe cap','Nested diamonds','Block code','Circuit nodes'];
+try{LIVERIES[0].design=clamp(parseInt(localStorage.getItem('f1-design'))||0,0,71)}catch(e){}
 function designApply(d){LIVERIES[0].design=d;try{localStorage.setItem('f1-design',d)}catch(e){}document.querySelectorAll('#designs button').forEach((b,i)=>b.classList.toggle('on',i===d))}
 DESIGNS.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>designApply(i);$('designs').appendChild(b)});
 designApply(LIVERIES[0].design);
@@ -2241,7 +2263,11 @@ function donutStep(dt){S.dOm=Math.min(5.4,(S.dOm||0)+8*dt);S.th+=S.dOm*dt;S.yaw=
 function skipCelebration(){if(G.finished&&G.cool&&!G.coolDone&&!G.resultShown){S.donut=false;G.coolDone=G.t-3;G.cool=false;$('skipCel').hidden=true}}
 $('skipCel').addEventListener('click',skipCelebration);$('spinBtn').addEventListener('click',toggleDonut);
 addEventListener('keydown',e=>{if(e.code==='Enter')skipCelebration()});
-function pFlagTick(dt){{const k=G.mode==='play'?clamp((Math.abs(G.speedKmh)-150)/170,0,1):0;PF.vg=(PF.vg||0)+(k-(PF.vg||0))*Math.min(1,dt*3);$('spdVig').style.opacity=(PF.vg*.85).toFixed(3)}
+let ltT=0;
+function thunder(){if(!AC||muted)return;const n=AC.sampleRate*2.2,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
+  const s=AC.createBufferSource();s.buffer=b;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=380;const g=AC.createGain();g.gain.value=.9;s.connect(lp);lp.connect(g);g.connect(A_.master||AC.destination);s.start()}
+function pFlagTick(dt){if(G.mode==='play'&&!G.paused&&W.rain>.55&&ltT<=0&&Math.random()<dt*.035){ltT=1;const e=$('lflash');e.style.transition='none';e.style.opacity='.75';requestAnimationFrame(()=>{e.style.transition='opacity .45s ease-out';e.style.opacity='0'});setTimeout(thunder,900+Math.random()*2200)}if(ltT>0)ltT-=dt*.12;
+{const k=G.mode==='play'?clamp((Math.abs(G.speedKmh)-150)/170,0,1):0;PF.vg=(PF.vg||0)+(k-(PF.vg||0))*Math.min(1,dt*3);$('spdVig').style.opacity=(PF.vg*.85).toFixed(3)}
 const e=$('pFlag');let k=null,tx='';
   if(G.race&&G.racing&&!G.finished&&!G.mp&&!S.wreck){const me=S.lapOffset+S.q.prog,N=TR.N;let lap=false;
     for(const a of AI){if(a.crash||a.crashed||a.gone)continue;const d=a.s-me;if(d>N-26&&d<N+2){lap=true;break}}
@@ -2358,7 +2384,7 @@ function toMenu(keep){G.champ=false;$('overlay').classList.remove('pod','podwait
   setupGrid();G.camYaw=S.th;S.rpm=4200;$('lights').classList.remove('on');$('posRow').hidden=false;showOverlay('menu');if(keep)mpOpen()}
 
 /* ---------- camera + render ---------- */
-function resize(){const d=Math.min(devicePixelRatio||1,1.75);const w=Math.floor(innerWidth*d),h=Math.floor(innerHeight*d);if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}}
+function resize(){const d=Math.min(Math.max(devicePixelRatio||1,1.5),2);const w=Math.floor(innerWidth*d),h=Math.floor(innerHeight*d);if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}}
 addEventListener('resize',resize);
 let VP=null,camEye=[0,3,-8];
 function camera(dt){
@@ -2369,7 +2395,7 @@ function camera(dt){
     const ey=[S.x-fx*.55,1.62+(S.kb||0),S.z-fz*.55];
     eye=ey;tgt=[ey[0]+fx*18,.05,ey[2]+fz*18];fov=74
   }else if(G.cam===1){
-    const ey=[S.x+fx*.08,1.12,S.z+fz*.08];   // visor cam: helmet height, wide lens
+    const lg=-S.ay*.0007,fg=S.ax*.0004,ey=[S.x+fx*(.08+fg)+Math.cos(S.th)*lg,1.12,S.z+fz*(.08+fg)-Math.sin(S.th)*lg];   // visor cam: helmet height, wide lens
     eye=ey;tgt=[ey[0]+fx*20,-2.4,ey[2]+fz*20];fov=100
   }else{
     const dist=G.cam===0?7.2+sp*.012:13,hgt=G.cam===0?2.3:4.8;
@@ -2398,7 +2424,7 @@ function drawPrim(p,model,liv){
   gl.disableVertexAttribArray(A.col);gl.vertexAttrib3f(A.col,0,0,0);
   const mt=p.mat;let col=mt[0];if(liv){if(p.cls==='paint')col=liv.paint;else if(p.cls==='accent')col=liv.accent;else if(p.cls==='tyre_stripe')col=liv.tyre;else if(p.cls==='rim'&&liv.rim)col=liv.rim}
   gl.uniform4f(P.u.uMat,mt[1],mt[2],mt[3],mt[4]);gl.uniform3f(P.u.uMatCol,col[0],col[1],col[2]);gl.uniform1f(P.u.uUseUni,1);
-  if(liv&&p.cls==='paint'&&liv.design){gl.uniform1f(P.u.uDesign,liv.design);gl.uniform3f(P.u.uAcc,liv.accent[0],liv.accent[1],liv.accent[2])}else gl.uniform1f(P.u.uDesign,0);
+  if(liv&&p.cls==='paint'&&liv.design){gl.uniform1f(P.u.uDesign,liv.design);gl.uniform3f(P.u.uAcc,liv.accent[0],liv.accent[1],liv.accent[2]);const rm=liv.rim||liv.accent;gl.uniform3f(P.u.uAcc2,rm[0],rm[1],rm[2])}else gl.uniform1f(P.u.uDesign,0);
   gl.uniformMatrix4fv(P.u.uModel,false,model);gl.uniform3fv(P.u.uMin,p.mn);gl.uniform3fv(P.u.uExt,p.ext);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,p.bidx);gl.drawElements(gl.TRIANGLES,p.ni,gl.UNSIGNED_SHORT,0)}
 function renderView(dt,cm,mir){
@@ -2469,13 +2495,13 @@ vec3 fxaa(vec2 u){vec3 rM=tx(u),rNW=tx(u+vec2(-1.,-1.)*uPx),rNE=tx(u+vec2(1.,-1.
  vec3 a=.5*(tx(u+d*(1./3.-.5))+tx(u+d*(2./3.-.5)));vec3 b=a*.5+.25*(tx(u+d*-.5)+tx(u+d*.5));float lb=lu(b);
  return (lb<lmin||lb>lmax)?a:b;}
 void main(){vec2 c=vU-.5;float r2=dot(c,c);vec3 col=fxaa(vU);
- col.r=mix(col.r,tx(vU+c*r2*.012).r,.8);col.b=mix(col.b,tx(vU-c*r2*.012).b,.8);
- if(uSpd>.02){vec3 acc=col;for(int i=1;i<6;i++)acc+=tx(vU-c*float(i)*.012*uSpd*(.5+r2*3.));col=mix(col,acc/6.,clamp(r2*3.2,0.,1.)*uSpd);}
- vec3 bl=vec3(0.);for(int i=0;i<8;i++){float a=float(i)*.7854;vec2 o=vec2(cos(a),sin(a));vec3 s1=tx(vU+o*uPx*4.),s2=tx(vU+o*uPx*11.);bl+=s1*max(lu(s1)-.72,0.)+s2*max(lu(s2)-.72,0.);}
- col+=bl/8.*(1.5+uNight*1.2);
+ {vec3 bl4=(tx(vU+vec2(uPx.x,0.))+tx(vU-vec2(uPx.x,0.))+tx(vU+vec2(0.,uPx.y))+tx(vU-vec2(0.,uPx.y)))*.25;col+=(col-bl4)*.9;col=max(col,0.);}
+ if(uSpd>.02){vec3 acc=col;for(int i=1;i<6;i++)acc+=tx(vU-c*float(i)*.005*uSpd*(.5+r2*3.));col=mix(col,acc/6.,clamp(r2*3.2,0.,1.)*uSpd*.5);}
+ vec3 bl=vec3(0.);for(int i=0;i<8;i++){float a=float(i)*.7854;vec2 o=vec2(cos(a),sin(a));vec3 s1=tx(vU+o*uPx*4.),s2=tx(vU+o*uPx*11.);bl+=s1*max(lu(s1)-.85,0.)+s2*max(lu(s2)-.85,0.);}
+ col+=bl/8.*(.8+uNight*.8);
  col=mix(col,col*col*(3.-2.*min(col,vec3(1.))),.22);float l=lu(col);col=mix(vec3(l),col,1.12-.14*uWet);
- col*=1.-smoothstep(.3,1.,r2*2.4)*.34;
- float h=fract(sin(dot(gl_FragCoord.xy+uTime,vec2(12.9898,78.233)))*43758.5453);col+=(h-.5)*.022;
+ col*=1.-smoothstep(.3,1.,r2*2.4)*.2;
+ float h=fract(sin(dot(gl_FragCoord.xy+uTime,vec2(12.9898,78.233)))*43758.5453);col+=(h-.5)*.006;
  gl_FragColor=vec4(col,1.);}`;
 const POST=prog(POSTVS,POSTFS,['aP']);let FB=null;
 const postBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,postBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
