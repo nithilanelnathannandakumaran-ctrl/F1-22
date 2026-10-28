@@ -173,6 +173,7 @@ export default {
             h: (Array.isArray(ch.h) ? ch.h : []).slice(0, 20).map(x => Array.isArray(x) ? [n(x[0], 0, 30), n(x[1], 0, 30)] : null),
             c: (Array.isArray(ch.c) ? ch.c : []).slice(-12).map(v => n(v, 0, 30)) };
         }
+        try { const old = JSON.parse(u.profile || '{}'); if (Array.isArray(old.unlocks)) clean.unlocks = old.unlocks; } catch (e) {}   // paid unlocks are set by the admin only, never by the client
         const s = JSON.stringify(clean); if (s.length > 7000) return json({ error: 'Too large' }, 400);
         await env.DB.prepare('UPDATE users SET profile=? WHERE id=?').bind(s, u.id).run();
         return json({ ok: true });
@@ -397,7 +398,13 @@ export default {
           if (act === 'reset-champ') delete pr.champ; else { const c = pr.champ || { u: 2, r: 0, s: 1, p: Array(19).fill(0), h: [], c: [] }; c.u = 20; pr.champ = c; }
           await env.DB.prepare('UPDATE users SET profile=? WHERE id=?').bind(JSON.stringify(pr), id).run(); await audit(env, act, u.username); return json({ ok: true });
         }
-        if (act === 'reset-profile') { await env.DB.prepare("UPDATE users SET profile='{}' WHERE id=?").bind(id).run(); await audit(env, 'reset-profile', u.username); return json({ ok: true }); }
+        if (act === 'grant' || act === 'revoke') {
+          const item = String(body.item || ''); if (!['f07'].includes(item)) return json({ error: 'Unknown item' }, 400);
+          const pr = JSON.parse(u.profile || '{}'); let L = Array.isArray(pr.unlocks) ? pr.unlocks : [];
+          L = act === 'grant' ? Array.from(new Set(L.concat(item))) : L.filter(x => x !== item); pr.unlocks = L;
+          await env.DB.prepare('UPDATE users SET profile=? WHERE id=?').bind(JSON.stringify(pr), id).run(); await audit(env, act, u.username, item); return json({ ok: true });
+        }
+        if (act === 'reset-profile') { let keep = '{}'; try { const o = JSON.parse(u.profile || '{}'); if (Array.isArray(o.unlocks) && o.unlocks.length) keep = JSON.stringify({ unlocks: o.unlocks }); } catch (e) {} await env.DB.prepare("UPDATE users SET profile=? WHERE id=?").bind(keep, id).run(); await audit(env, 'reset-profile', u.username); return json({ ok: true }); }
         if (act === 'chat') {
           const rows = (await env.DB.prepare('SELECT d.at,d.txt,(SELECT username FROM users WHERE id=d.frm) AS f,(SELECT username FROM users WHERE id=d.too) AS t FROM dms d WHERE d.frm=? OR d.too=? ORDER BY d.id DESC LIMIT 100').bind(id, id).all()).results.reverse();
           const g = (await env.DB.prepare('SELECT g.name,x.at,x.txt FROM grp_msg x JOIN grp g ON g.id=x.g WHERE x.u=? ORDER BY x.id DESC LIMIT 60').bind(id).all()).results.reverse();
