@@ -165,12 +165,12 @@ export default {
         const clean = {};
         if (pr.drv && typeof pr.drv === 'object') clean.drv = { name: String(pr.drv.name || '').slice(0, 22), tag: String(pr.drv.tag || '').slice(0, 3), num: Math.max(1, Math.min(99, +pr.drv.num || 7)), nat: String(pr.drv.nat || 'GBR').slice(0, 3) };
         if (Array.isArray(pr.livery) && pr.livery.length === 3) clean.livery = pr.livery.map(x => String(x).slice(0, 9));
-        if (pr.bests && typeof pr.bests === 'object') { clean.bests = {}; for (const [k, v] of Object.entries(pr.bests).slice(0, 30)) if (/^apex-(best|sec)[-a-z0-9]*$/.test(k)) clean.bests[k] = String(v).slice(0, 80); }
+        if (pr.bests && typeof pr.bests === 'object') { clean.bests = {}; for (const [k, v] of Object.entries(pr.bests).slice(0, 120)) if (/^apex-(best|sec)[-a-z0-9]*$/.test(k)) clean.bests[k] = String(v).slice(0, 80); }
         const ch = pr.champ;
-        if (ch && typeof ch === 'object' && Array.isArray(ch.p) && ch.p.length === 19) {
+        if (ch && typeof ch === 'object' && Array.isArray(ch.p) && (ch.p.length === 19 || ch.p.length === 20)) {
           const n = (v, lo, hi) => Math.max(lo, Math.min(hi, v | 0));
-          clean.champ = { u: n(ch.u, 2, 20), r: n(ch.r, 0, 20), s: n(ch.s, 1, 9999), p: ch.p.map(v => n(v, 0, 9999)),
-            h: (Array.isArray(ch.h) ? ch.h : []).slice(0, 20).map(x => Array.isArray(x) ? [n(x[0], 0, 30), n(x[1], 0, 30)] : null),
+          clean.champ = { u: n(ch.u, 2, 30), r: n(ch.r, 0, 30), s: n(ch.s, 1, 9999), p: ch.p.map(v => n(v, 0, 9999)).concat([0, 0]).slice(0, 20),
+            h: (Array.isArray(ch.h) ? ch.h : []).slice(0, 30).map(x => Array.isArray(x) ? [n(x[0], 0, 30), n(x[1], 0, 30)] : null),
             c: (Array.isArray(ch.c) ? ch.c : []).slice(-12).map(v => n(v, 0, 30)) };
         }
         try { const old = JSON.parse(u.profile || '{}'); if (Array.isArray(old.unlocks)) clean.unlocks = old.unlocks; } catch (e) {}   // paid unlocks are set by the admin only, never by the client
@@ -395,11 +395,11 @@ export default {
         if (act === 'unmute') { await env.DB.prepare('DELETE FROM mutes WHERE u=?').bind(id).run(); await audit(env, 'unmute', u.username); return json({ ok: true }); }
         if (act === 'unlock-all' || act === 'reset-champ') {
           const pr = JSON.parse(u.profile || '{}');
-          if (act === 'reset-champ') delete pr.champ; else { const c = pr.champ || { u: 2, r: 0, s: 1, p: Array(19).fill(0), h: [], c: [] }; c.u = 20; pr.champ = c; }
+          if (act === 'reset-champ') delete pr.champ; else { const c = pr.champ || { u: 2, r: 0, s: 1, p: Array(20).fill(0), h: [], c: [] }; c.u = 24; pr.champ = c; }
           await env.DB.prepare('UPDATE users SET profile=? WHERE id=?').bind(JSON.stringify(pr), id).run(); await audit(env, act, u.username); return json({ ok: true });
         }
         if (act === 'grant' || act === 'revoke') {
-          const item = String(body.item || ''); if (!['f07'].includes(item)) return json({ error: 'Unknown item' }, 400);
+          const item = String(body.item || ''); if (!['f07', 'cr7'].includes(item)) return json({ error: 'Unknown item' }, 400);
           const pr = JSON.parse(u.profile || '{}'); let L = Array.isArray(pr.unlocks) ? pr.unlocks : [];
           L = act === 'grant' ? Array.from(new Set(L.concat(item))) : L.filter(x => x !== item); pr.unlocks = L;
           await env.DB.prepare('UPDATE users SET profile=? WHERE id=?').bind(JSON.stringify(pr), id).run(); await audit(env, act, u.username, item); return json({ ok: true });
