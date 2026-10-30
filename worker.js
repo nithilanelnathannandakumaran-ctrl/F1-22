@@ -103,7 +103,7 @@ export default {
         if (u.username_lc !== adminName(env) && (await maintOn(env))) return json({ error: 'maintenance' }, 503);
         const code = (url.searchParams.get('code') || '').toUpperCase();
         if (!/^[A-Z0-9]{4}$/.test(code)) return json({ error: 'Bad room code' }, 400);
-        const h = new Headers(req.headers); h.set('x-f1-user', u.username);
+        const h = new Headers(req.headers); h.set('x-f1-user', u.username); h.set('x-f1-admin', u.username_lc === adminName(env) ? '1' : '0');
         return env.ROOM.get(env.ROOM.idFromName(code)).fetch(new Request(req.url, { headers: h }));
       }
       let body = {};
@@ -462,7 +462,7 @@ export class Room {
     for (const q of this.players.values()) if (q.name === user) { this.players.delete(q.id); try { q.ws.close(1000, 'replaced'); } catch (e) {} }
     if (this.players.size >= MAXP) return refuse('Room is full (10 players).');
     if (this.players.size === 0) { this.track = /^[a-z]{3,12}$/.test(trk) ? trk : 'apex'; this.laps = 10; }
-    const me = { id: this.nextId++, name: user, drv: user, tag: 'DRI', num: 7, liv: ['#0d1f6b', '#e11b22', '#d4a937'], ws: server, fin: null, last: 0 };
+    const me = { admin: req.headers.get('x-f1-admin') === '1', id: this.nextId++, name: user, drv: user, tag: 'DRI', num: 7, liv: ['#0d1f6b', '#e11b22', '#d4a937'], ws: server, fin: null, last: 0 };
     this.players.set(me.id, me);
     this.send(me, { t: 'hello', id: me.id, now: Date.now() });
     this.lobby();
@@ -495,6 +495,9 @@ export class Room {
           if (![...this.players.values()].some(q => q !== me && q.fin != null)) { clearTimeout(this.timer); this.timer = setTimeout(() => this.endRace(), 90e3); }
           this.checkEnd(); break;
         }
+        case 'slow':
+          if (!me.admin || this.status !== 'racing') return;
+          this.all({ t: 'slow', on: !!m.on, to: num(m.to, 0, 1e6, 0) | 0 }, me.id); break;
         case 'leave': try { server.close(1000, 'bye'); } catch (e) {} break;
       }
     });
