@@ -1372,6 +1372,7 @@ function buildScene(){
     // near layer: shop fronts and flats right behind the walls
     let n=0,t2=0;
     while(n<520&&t2<12000){t2++;const i=Math.floor(rnd()*N),sd=rnd()<.5?1:-1,hw=3.2+rnd()*4,hd=3.5+rnd()*5,off=sd*(WALL+3.2+hw+rnd()*4),p=LP(i,off,0,0);
+      if(pitSideZone(i,sd)||pitSideZone(i+5,sd)||pitSideZone(i-5,sd))continue;
       if(nearTrack(p[0],p[1],WALL+2+Math.max(hw,hd)*1.1)||!clearOf(p[0],p[1]))continue;
       bldV(p,yawAt(i),hw,hd,7+rnd()*26,pal[Math.floor(rnd()*pal.length)],0);n++}
     // far layer: tall towers behind the grandstands
@@ -1386,6 +1387,19 @@ function buildScene(){
       box(a[0],2.7,a[1],.07,2.7,.07,0,[.5,.52,.56]);
       for(const hy of [1.1,2.2,3.3,4.4,5.3])box(mx,hy,mz,.025,.025,len,yw,[.62,.64,.68]);
       if(i%6===0)box(mx,2.7,mz,.012,2.5,len,yw,[.55,.57,.6])}
+    // solid barrier + catch fence between the pit complex and the city: follows the pit entry / exit road, then runs behind the garages
+    {const bOff=sr=>{const e=sr>=PE0&&sr<PE1||sr>PX0&&sr<=PX1?pitEdge(sr>=PE0&&sr<PE1?Math.max(sr,PE0):Math.min(sr,PX1),'o'):null;
+        if(sr>=PE1&&sr<=PX0)return WALL+33;return Math.max(WALL+.7,e==null?0:e+1.6)};
+      const seg=(a,b,h)=>{const mx=(a[0]+b[0])/2,mz=(a[1]+b[1])/2,len=Math.hypot(b[0]-a[0],b[1]-a[1])/2+.05,yw=Math.atan2(b[0]-a[0],b[1]-a[1]);
+        box(mx,.7,mz,.38,.7,len,yw,[.66,.66,.68],[.78,.78,.8]);box(mx,1.02,mz,.4,.04,len,yw,[.9,.12,.12]);
+        box(a[0],3.2,a[1],.07,2.2,.07,0,[.5,.52,.56]);for(const hy of [2.2,3.1,4,4.9])box(mx,hy,mz,.025,.025,len,yw,[.62,.64,.68])};
+      let prev=null,prevR=0;
+      for(let k=0;k<N;k+=2){const i=(Math.floor(N/2)+k)%N,sr=srOf(i);if(sr<PE0-8||sr>PX1+40){prev=null;continue}
+        const o=bOff(sr),p=LP(i,-o,0,0);
+        if(prev){seg(prev,p);
+          if(Math.abs(o-prevR)>6){ // end walls where the barrier steps out behind the garages
+            const lo=LP(i,-Math.min(o,prevR),0,0),hi=LP(i,-Math.max(o,prevR),0,0);seg(lo,hi)}}
+        prev=p;prevR=o}}
     // lamp posts with glowing heads
     if(NIGHT)for(const sd of [1,-1])for(let i=4;i<N;i+=14){if(sd<0&&pitSideZone(i,-1))continue;const p=LP(i,sd*(WALL+1.9),0,0);
       box(p[0],4.5,p[1],.1,4.5,.1,0,[.3,.3,.34]);const q=LP(i,sd*(WALL-.4),0,0);box(q[0],9.1,q[1],.35,.12,.35,yawAt(i),EM([1,.95,.8]));
@@ -2038,7 +2052,7 @@ function aiStep(dt){if(!G.race||!G.racing||G.mp)return;const N=TR.N;
         if(a.cside*a.d>=WALL-1.7){a.d=a.cside*(WALL-1.7);a.crash=2;const vx=Math.sin(a.th)*a.v,vz=Math.cos(a.th)*a.v;crashStart(a,vx,vz,Math.max(14,a.v*.3),a.cside);a.cvx=vx*.3;a.cvz=vz*.3;burnStart(a,true);a.yawV=a.crashYaw;a.cv=a.v;G.shake=Math.max(G.shake,.3)}}
       else{a.v=Math.max(0,a.v-16*dt);a.s+=a.v*dt/STEP;const p0=trackXY(a.s,a.d);a.x=p0[0];a.z=p0[1];a.th+=a.yawV*dt;a.yawV*=Math.exp(-dt*1.6);a.spin+=a.v/META.wheels.FL.r*dt;crashStep(a,dt);if(a.v<=.05&&a.cr&&a.cr.rest)a.crashed=true}
       continue}
-    let vt=VTa[i]*CARK.ai*a.skill*Math.min(1,Math.sqrt(tyreGrip(a.ty,W.wet)))*(1-.07*W.wet)*(1-.16*Math.pow(a.wear||0,1.3)-(a.wear>.8?.12*(a.wear-.8)/.2:0)),td=LINE[i]*a.line*(aiLineW(a));
+    let vt=VTa[i]*CARK.ai*(a.admSlow?.5:1)*a.skill*Math.min(1,Math.sqrt(tyreGrip(a.ty,W.wet)))*(1-.07*W.wet)*(1-.16*Math.pow(a.wear||0,1.3)-(a.wear>.8?.12*(a.wear-.8)/.2:0)),td=LINE[i]*a.line*(aiLineW(a));
     if(G.racing&&!a.pit&&!a.fin)a.wear=Math.min(1,(a.wear||0)+dt*TY[Math.min(a.ty,4)].wr*(a.v/60)*1.5*(a.ty>2?1.5:1));
     if(G.racing&&G.t-G.goT<(a.react||0))vt=0;
     if(a.err>0){a.err-=dt;vt*=.72}else if(G.racing&&!a.pit&&!a.fin&&Math.random()<dt*.006*(1.2-a.skill)*(1+W.wet*2))a.err=1.4+Math.random();
@@ -2391,16 +2405,17 @@ function step(dt){
    else if(brk>0)S.ers=Math.min(1,S.ers+dt*.12*brk);else S.ers=Math.min(1,S.ers+dt*.01);
    if(S.cut>0){S.cut-=dt;a-=Math.max(0,a)*.7}
    a-=(S.eh||0)*.04*Math.max(0,a);if(thr<=0&&brk<=0&&u>8)a-=1.4}
-  if(brk>0){if(u>.6)a-=brk*(S.bf||1)*(1-.3*(S.lk||0))*Math.min(13+.0022*u*u,grip*.95);else if(thr<=0)a-=brk*(u>-16?5:0)}
+  if(brk>0){if(u>.6)a-=brk*(S.bf||1)*(1-.3*(S.lk||0))*Math.min(17+.0028*u*u,grip*.98);else if(thr<=0)a-=brk*(u>-16?5:0)}
   if(u<-.5&&thr>0)a+=thr*14;
   const dr=Math.sign(u)*(.00035*u*u*(1+(S.hw||0)*.012)*(1-.3*S.ss-(S.drs?.36:0))*(1+.35*(S.aero||0))+.15+(S.onGrass?1.4+.0025*u*u:0));a-=dr;
   let un=u+a*dt;
   if(u>0&&un<0&&!(brk>0&&u<=.6))un=0;else if(u<0&&un>0&&thr<=0)un=0;
-  u=un;if(S.limit&&u>22.2)u=Math.max(22.2,u-30*dt);
+  u=un;if(S.admSlow&&u>S.admSlow)u=Math.max(S.admSlow,u-45*dt);
+  if(S.limit&&u>22.2)u=Math.max(22.2,u-30*dt);
   else if(scActive()&&!S.lane&&G.race){const sl=scGapLimit(S.lapOffset+S.q.prog,null,true);if(u>sl){u=Math.max(sl,u-(S.lapOffset>0?34:30)*dt);S.scl=1}else S.scl=0}
   S.ax=a;
   // single-track tyre model: slip angles, weight transfer, friction ellipse (power oversteer, lift-off, trail braking)
-  {const M=800*(1+.09*S.fuel),IZ=1000,LA=1.8,LB=1.75,Hc=.32,Fz=M*9.81*DF,tr=M*a*Hc/WY,ue=Math.max(u,3);
+  {const M=800*(1+.09*S.fuel),IZ=1000,LA=1.8,LB=1.75,Hc=.32,Fz=M*9.81*DF,tr=M*a*Hc*(a<0?.55:1)/WY,ue=Math.max(u,3);
    const Fzf=Math.max(Fz*.15,Fz*LB/WY-tr),Fzr=Math.max(Fz*.15,Fz*LA/WY+tr);
    const Fxr=a>0?M*a:Math.max(M*a*.3,-.85*mu*Fzr)*.45,Fxf=a<0?M*a*.7:0;
    const ell=(fx,fz)=>Math.sqrt(Math.max(.05,1-Math.pow(fx/(mu*fz),2)));
@@ -2413,6 +2428,7 @@ function step(dt){
    const ayb=(Fyf*cd+Fyr)/M;
    vl+=(ayb-u*r)*dt;u+=(vl*r-Fyf*Math.sin(dph)/M)*dt;
    r+=((LA*Fyf*cd-LB*Fyr)/IZ-r*(.45+(a<-2?1.7*Math.min(1,-a/18):0)))*dt;
+   if(brk>0&&u>5){const stb=1-Math.min(1,Math.abs(S.steer)*1.6);vl*=1-Math.min(1,dt*4*brk*stb);r*=1-Math.min(1,dt*3*brk*stb)}   // straight-line braking stays stable: the car slows down instead of sliding
    const w=clamp((u-4)/6,0,1);   // blend to a kinematic model at crawl speeds
    if(w<1){const rk=u*Math.tan(dph)/WY;r+=(rk-r)*(1-w)*Math.min(1,dt*20);vl*=1-(1-w)*Math.min(1,dt*10)}
    S.ay=ayb;S.slipF=af;S.slipR=ar;
@@ -2545,6 +2561,7 @@ const HAPPY_GAIN=['Yes! Great move, P{p}! Keep going!','Brilliant overtake! You 
 const HAPPY_P1=['We are P1. Lovely driving, keep it clean.','You are leading the race. Fantastic job mate!','P1, P1, everything is looking great. Keep it tidy.','Great pace out front. The car looks superb.','Leading the race, mate. Just keep doing what you are doing.','Gap is good, tyres are good. We are in a great place.','Fantastic, the team is loving this. Stay focused!'];
 const MAD_PEN=['Stay inside the white lines, please.','Keep it on the track. Those penalties are hurting us.','F***, stop cutting the track! That is penalty time!','Come on, concentrate! We cannot keep giving away time.'];
 const MAD_CALM=['Calm down, focus.','Okay, reset. Clean laps from here.','Take a breath. Back to the rhythm.'];
+const SLOW_CALLS=['S***, why are you slowing down?! What is going on?!','Why are you slowing down?! Come on, push, push!','F***, what is wrong with the car? You are losing so much time!','Mate, why are you so slow? The pace has dropped off a cliff!','What the hell are you doing? You are slowing down, put your foot down!','S***, talk to me, why are you slowing down? Is it the car?!','Come on! You are miles off the pace, what is happening?!']
 let engAcc=0,engGapT=0,engPos=0,engLast='';
 const pickNew=a=>{let m=pick(a);for(let k=0;k<5&&m===engLast;k++)m=pick(a);engLast=m;return m};
 const ENG_TA=['Time attack. Nobody to race, just you and the clock.','Clean lap, that is all we need.','Brake late, but not too late. Find the limit.','Hit every apex. Lap time is made on the exits.','Do not overdrive it. Smooth is fast.','Look for the kerbs, use all the road but stay inside the line.','Tyres need a lap or two to come in. Build it up.','Think about the next corner while you are still on the straight.','Keep the car tidy and the number will come.','Purple sectors are there for the taking.'];
@@ -2567,6 +2584,8 @@ function engTick(dt){
   const pen=S.pen>0;$('penRow').hidden=!pen;if(pen)$('penV').textContent='+'+S.pen+'s';
   if(!G.racing||G.finished||G.mode!=='play'||G.paused)return;
   engAcc+=dt;if(engAcc<1)return;engAcc=0;const F=RD.flags,t=G.t-G.goT;
+  if(S.admSlow&&G.race&&!G.finished&&t-(F.slowT||-99)>11){F.slowT=t;engMad(1);radio(pick(SLOW_CALLS),{pri:1,cls:'pen',dur:5000})}
+  if(!S.admSlow)F.slowT=-99;
   if(t>1.5&&!F.start){F.start=1;radio(G.race?'Lights out and away we go. Good luck out there.':'Time attack. Find the line and push.')}
   if(S.wear<.12){F.t0=F.t1=F.t2=0;F.nag=0}
   const inPit=G.pit||S.lane,canPit=G.race&&LAPS>1;
@@ -3324,6 +3343,23 @@ function tilesColours(){const L=LIVERIES[0],r=document.documentElement.style;r.s
 /* ---------- multiplayer ---------- */
 const MP={ws:null,code:'',id:0,players:[],host:false,off:0,rtt:1e9,laps:5,status:'lobby',track:'',sendT:0,rem:new Map(),startTm:0,pingTm:0,cd:0};
 const mpMsg=t=>{$('mpMsg').textContent=t||''};
+const ADMN={slowAI:false,slowAll:false};
+function admRender(){const p=$('admPanel');if(!p||p.hidden)return;
+  let h='<b>Admin \u00b7 slow drivers</b> <button data-a="all">'+(ADMN.slowAll?'Release all':'Slow all')+'</button> <button data-a="x">Close</button><div class="al">';
+  AI.forEach((a,k)=>{if(a.gone)return;h+='<div><span>'+esc(a.liv.name)+(a.mp?' (player)':'')+'</span><button data-a="d" data-k="'+k+'" class="'+(a.admSlow?'on':'')+'">'+(a.admSlow?'Release':'Slow')+'</button></div>'});
+  p.innerHTML=h+'</div>'}
+(function(){const p=document.createElement('div');p.id='admPanel';p.hidden=true;
+  p.style.cssText='position:fixed;left:12px;top:90px;z-index:9;width:250px;max-height:70vh;overflow:auto;padding:10px;background:rgba(10,12,18,.92);border-left:4px solid #e10600;font:600 12px var(--mono);color:#fff';
+  const st=document.createElement('style');st.textContent='#admPanel button{font:700 11px var(--mono);margin:2px;padding:3px 8px;background:#2a2d38;color:#fff;border:1px solid #555;cursor:pointer}#admPanel button.on{background:#e10600;border-color:#e10600}#admPanel .al div{display:flex;justify-content:space-between;align-items:center;margin-top:3px}';
+  document.head.appendChild(st);document.body.appendChild(p);
+  p.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
+    if(a==='x')p.hidden=true;
+    else if(a==='all'){ADMN.slowAll=!ADMN.slowAll;if(G.mp)mpSend({t:'slow',on:ADMN.slowAll});AI.forEach(q=>{if(!q.mp)q.admSlow=ADMN.slowAll;else q.admSlow=ADMN.slowAll})}
+    else if(a==='d'){const q=AI[+b.dataset.k];if(!q)return;q.admSlow=!q.admSlow;
+      if(q.mp){let id=0;for(const [pid,r] of MP.rem)if(r===q)id=pid;if(id)mpSend({t:'slow',on:q.admSlow,to:id})}}
+    admRender();e.target.blur()});
+  addEventListener('keydown',e=>{if(e.key!=='k'&&e.key!=='K')return;if(!ACC.admin||G.mode!=='play'||e.repeat)return;const t=e.target;if(t&&/INPUT|TEXTAREA/.test(t.tagName))return;
+    p.hidden=!p.hidden;admRender()})})();
 function mpSend(o){if(MP.ws&&MP.ws.readyState===1)MP.ws.send(JSON.stringify(o))}
 function mpOpen(){G.mode='mp';$('overlay').hidden=true;$('mp').hidden=false;mpRender()}
 function mpClose(){$('mp').hidden=true;G.mode='menu';showOverlay('menu')}
@@ -3357,6 +3393,7 @@ function mpOn(m){
     if(!$('mp').hidden)mpRender()}
   else if(m.t==='go')mpGo(m);
   else if(m.t==='s'){const a=MP.rem.get(m.id);if(a){const v=m.a;a.tgt={x:v[0],z:v[1],th:v[2],v:v[3],s:v[4],sp:v[5],dl:v[6]};a.tt=performance.now();a.ty=v[7]|0;if(TY[a.ty])a.liv.tyre=TY[a.ty].c;if(!a.seen){a.seen=1;a.x=v[0];a.z=v[1];a.th=v[2]}}}
+  else if(m.t==='slow'){if(!ACC.admin&&(!m.to||m.to===MP.id)){S.admSlow=m.on?32:0}}
   else if(m.t==='fin'){const a=MP.rem.get(m.id);if(a&&!a.fin){a.fin=true;a.finT=m.time}}
   else if(m.t==='drop'){const a=MP.rem.get(m.id);if(a){MP.rem.delete(m.id);const i=AI.indexOf(a);if(i>=0)AI.splice(i,1)}}
   else if(m.t==='end'&&!$('mp').hidden)mpRender()}
@@ -3459,7 +3496,7 @@ const LD=(p,t)=>{try{$('ldBar').style.width=p+'%';$('ldTx').textContent=t}catch(
   LD(100,'Ready');
 }catch(err){console.error(err);$('sub').textContent='Could not start: '+err.message}
 window.__ldDone=1;requestAnimationFrame(frame);setTimeout(()=>{const e=$('ldScr');if(e){e.style.transition='opacity .4s';e.style.opacity=0;setTimeout(()=>e.remove(),450)}},250)})();
-window.__apex={failStep,standings,ACC,carsOpen,CH:()=>CH,crReview,CR:()=>CR,crOpen,crSet,carApply,useModel,scn:()=>scene.n,INV,trackPt,placeCar,pitAuto,podFlagInit,ACC,FR,frOpen,showOverlay,chOpen,chStart,chLaunch,getCH:()=>CH,LIV:LIVERIES,FX,fxTick,POD,podW,MARSH,finishRace,SCS,scPlan,crashStart,resetToTrack,srOf,W,DRV,TY,S,G,inp,TR,step,query,startRace,keys,AI,LAPS,VTa,LINE,BRAKE,standings,skidBuf,skidUpdate,LIVERIES,toMenu};
+window.__apex={TRK_N:()=>TR.N,failStep,standings,ACC,carsOpen,CH:()=>CH,crReview,CR:()=>CR,crOpen,crSet,carApply,useModel,scn:()=>scene.n,INV,trackPt,placeCar,pitAuto,podFlagInit,ACC,FR,frOpen,showOverlay,chOpen,chStart,chLaunch,getCH:()=>CH,LIV:LIVERIES,FX,fxTick,POD,podW,MARSH,finishRace,SCS,scPlan,crashStart,resetToTrack,srOf,W,DRV,TY,S,G,inp,TR,step,query,startRace,keys,AI,LAPS,VTa,LINE,BRAKE,standings,skidBuf,skidUpdate,LIVERIES,toMenu};
 })();
 </script>
 
