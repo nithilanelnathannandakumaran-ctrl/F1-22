@@ -1,4 +1,4 @@
-// F1 22 account + admin API for Cloudflare Workers + D1.
+// F1 26 account + admin API for Cloudflare Workers + D1.
 // Secrets: ADMIN_PASSWORD (required). Bindings: DB (D1), ASSETS (static files).
 const PERM = 9e15;
 const adminName = env => String(env.ADMIN_USERNAME || 'elnathan').toLowerCase();
@@ -167,9 +167,9 @@ export default {
         if (Array.isArray(pr.livery) && pr.livery.length === 3) clean.livery = pr.livery.map(x => String(x).slice(0, 9));
         if (pr.bests && typeof pr.bests === 'object') { clean.bests = {}; for (const [k, v] of Object.entries(pr.bests).slice(0, 120)) if (/^apex-(best|sec)[-a-z0-9]*$/.test(k)) clean.bests[k] = String(v).slice(0, 80); }
         const ch = pr.champ;
-        if (ch && typeof ch === 'object' && Array.isArray(ch.p) && (ch.p.length === 19 || ch.p.length === 20)) {
+        if (ch && typeof ch === 'object' && Array.isArray(ch.p) && (ch.p.length >= 19 && ch.p.length <= 22)) {
           const n = (v, lo, hi) => Math.max(lo, Math.min(hi, v | 0));
-          clean.champ = { u: n(ch.u, 2, 30), r: n(ch.r, 0, 30), s: n(ch.s, 1, 9999), p: ch.p.map(v => n(v, 0, 9999)).concat([0, 0]).slice(0, 20),
+          clean.champ = { u: n(ch.u, 2, 30), r: n(ch.r, 0, 30), s: n(ch.s, 1, 9999), p: ch.p.map(v => n(v, 0, 9999)).concat([0, 0, 0, 0]).slice(0, 22),
             h: (Array.isArray(ch.h) ? ch.h : []).slice(0, 30).map(x => Array.isArray(x) ? [n(x[0], 0, 30), n(x[1], 0, 30)] : null),
             c: (Array.isArray(ch.c) ? ch.c : []).slice(-12).map(v => n(v, 0, 30)) };
         }
@@ -395,7 +395,7 @@ export default {
         if (act === 'unmute') { await env.DB.prepare('DELETE FROM mutes WHERE u=?').bind(id).run(); await audit(env, 'unmute', u.username); return json({ ok: true }); }
         if (act === 'unlock-all' || act === 'reset-champ') {
           const pr = JSON.parse(u.profile || '{}');
-          if (act === 'reset-champ') delete pr.champ; else { const c = pr.champ || { u: 2, r: 0, s: 1, p: Array(20).fill(0), h: [], c: [] }; c.u = 24; pr.champ = c; }
+          if (act === 'reset-champ') delete pr.champ; else { const c = pr.champ || { u: 2, r: 0, s: 1, p: Array(22).fill(0), h: [], c: [] }; c.u = 24; pr.champ = c; }
           await env.DB.prepare('UPDATE users SET profile=? WHERE id=?').bind(JSON.stringify(pr), id).run(); await audit(env, act, u.username); return json({ ok: true });
         }
         if (act === 'grant' || act === 'revoke') {
@@ -439,8 +439,9 @@ export class Room {
   all(o, except) { const s = JSON.stringify(o); for (const p of this.players.values()) if (p.id !== except) { try { p.ws.send(s); } catch (e) {} } }
   lobby() {
     const h = this.hostId();
-    this.all({ t: 'lobby', track: this.track, laps: this.laps, status: this.status,
-      players: [...this.players.values()].map(p => ({ id: p.id, name: p.name, drv: p.drv, tag: p.tag, num: p.num, des: p.des | 0, liv: p.liv, host: p.id === h })) });
+    const hp = this.players.get(h);
+    this.all({ t: 'lobby', track: this.track, laps: this.laps, status: this.status, carMode: this.carMode || 'mine', hostCars: (hp && hp.cars) || [],
+      players: [...this.players.values()].map(p => ({ id: p.id, name: p.name, drv: p.drv, tag: p.tag, num: p.num, des: p.des | 0, liv: p.liv, car: p.car || '', host: p.id === h })) });
   }
   endRace() {
     clearTimeout(this.timer); this.timer = null; if (this.status !== 'racing') return;
@@ -461,7 +462,7 @@ export class Room {
     // same account joining again replaces the old connection
     for (const q of this.players.values()) if (q.name === user) { this.players.delete(q.id); try { q.ws.close(1000, 'replaced'); } catch (e) {} }
     if (this.players.size >= MAXP) return refuse('Room is full (10 players).');
-    if (this.players.size === 0) { this.track = /^[a-z]{3,12}$/.test(trk) ? trk : 'apex'; this.laps = 10; }
+    if (this.players.size === 0) { this.track = /^[a-z]{3,12}$/.test(trk) ? trk : 'apex'; this.laps = 10; this.carMode = 'mine'; }
     const me = { admin: req.headers.get('x-f1-admin') === '1', id: this.nextId++, name: user, drv: user, tag: 'DRI', num: 7, liv: ['#0d1f6b', '#e11b22', '#d4a937'], ws: server, fin: null, last: 0 };
     this.players.set(me.id, me);
     this.send(me, { t: 'hello', id: me.id, now: Date.now() });
@@ -479,10 +480,10 @@ export class Room {
         case 'ping': this.send(me, { t: 'pong', c: num(m.c, 0, 1e15, 0), now: Date.now() }); break;
         case 'hi':
           me.drv = String(m.drv || me.name).slice(0, 22); me.tag = String(m.tag || 'DRI').replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || 'DRI';
-          me.num = num(m.num, 1, 99, 7); me.des = num(m.des, 0, 40, 0) | 0; me.liv = Array.isArray(m.liv) && m.liv.length === 3 ? m.liv.map(hexOk) : me.liv; this.lobby(); break;
+          me.car = /^[a-z0-9]{2,4}$/.test(m.car) ? m.car : ''; me.cars = Array.isArray(m.cars) ? m.cars.filter(c => /^[a-z0-9]{2,4}$/.test(c)).slice(0, 16) : []; me.num = num(m.num, 1, 99, 7); me.des = num(m.des, 0, 40, 0) | 0; me.liv = Array.isArray(m.liv) && m.liv.length === 3 ? m.liv.map(hexOk) : me.liv; this.lobby(); break;
         case 'cfg':
           if (me.id !== this.hostId() || this.status !== 'lobby') return;
-          this.laps = num(m.laps, 1, 100, 10) | 0; this.lobby(); break;
+          this.laps = num(m.laps, 1, 100, 10) | 0; if (['mine', 'host', 'all'].includes(m.carMode)) this.carMode = m.carMode; this.lobby(); break;
         case 'start':
           if (me.id !== this.hostId() || this.status !== 'lobby') return;
           this.status = 'racing'; this.raceSeq++;
