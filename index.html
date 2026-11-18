@@ -842,7 +842,7 @@ const carTeam=()=>CTEAMS[CR.tier][CR.team]||CTEAMS.F2[0];
 function carRates(){const t=carTeam(),base=CR.tier==='F3'?{pw:.8,df:.79,gr:.95,ai:.84}:CR.tier==='F2'?{pw:.88,df:.86,gr:.97,ai:.9}:{pw:1,df:1,gr:1,ai:1},r=Math.min(1.02,t.r+(CR.cb||0));
   return {pw:base.pw*(1-(1-r)*.7),df:base.df*(1-(1-r)*.5),gr:base.gr,ai:base.ai}}
 const PAY_URL='';   // put a PayPal / Stripe payment link here to show a Pay $1 button
-const CARS_OWN=()=>{const u=ACC.unl||[];return k=>k==='f1'||!!ACC.admin||u.includes(k)};
+const CARS_OWN=()=>{const u=ACC.unl||[];return k=>k==='f1'||k==='f07'||!!ACC.admin||u.includes(k)};
 const T26=[['mer','Mercedes'],['fer','Ferrari'],['mcl','McLaren'],['rbr','Red Bull'],['wil','Williams'],['alp','Alpine'],['rbs','Racing Bulls'],['ast','Aston Martin'],['aud','Audi'],['haa','Haas'],['cad','Cadillac']];const T26K=Object.fromEntries(T26.map(t=>[t[1],t[0]])),T26V=T26.map(t=>t[0]);
 function carModelKey(){if(S07_ACT)return 'f07';if(CAR_ACT&&CR.tier==='F3')return 'f3';if(CAR_ACT&&CR.tier==='F2')return 'f2';if(CAR_ACT&&CR.tier==='F1'){const k=T26K[carTeam().n];return k&&MODELS[k]&&own26()(k)?k:'cad'}let sel='f1';try{sel=localStorage.getItem('f1-car')||'f1'}catch(e){}if(T26V.includes(sel))return MODELS[sel]&&own26()(sel)?sel:'f1';return sel==='f07'&&CARS_OWN()('f07')?'f07':'f1'}
 function carApply(){ // put the right car, colours, rivals and physics in place for the career / 2007 season (or restore the normal game)
@@ -2276,7 +2276,7 @@ function aiStep(dt){if(!G.race||!G.racing||G.mp)return;const N=TR.N;
     a.spin+=a.v/META.wheels.FL.r*dt;
     if(!a.fin&&a.s>=LAPS*N){a.fin=true;a.finT=G.t-G.goT+(a.pen||0);a.side=a.d>=0?1:-1}
     aiPlace(a,dt)}}
-function collide(){if(!G.race)return;
+function collide(){if(!G.race||S.god)return;
   const cs=(x,z,th)=>{const fx=Math.sin(th),fz=Math.cos(th);return [[x+fx*1.6,z+fz*1.6],[x,z],[x-fx*1.6,z-fz*1.6]]};
   const pc=cs(S.x,S.z,S.th),R=1.9;
   for(const a of (SCS.car?AI.concat([SCS.car]):AI)){if(a.crashed||a.gone)continue;const ex=S.x-a.x,ez=S.z-a.z;if(ex*ex+ez*ez>40)continue;
@@ -2539,7 +2539,7 @@ function step(dt){
   if(!G.racing){S.vx=S.vz=0;S.yaw=0;S.ax=S.ay=0;S.rpm=S.rpm;G.t+=dt;S.q=query(S.x,S.z,S.hint);G.prevProg=S.q.prog;return}
   if(S.wreck){wreckStep(dt);return}
   if(G.pit){S.vx=S.vz=0;S.yaw=0;S.ax=S.ay=0;S.skid=0;pitLogic(dt,0);G.t+=dt;lapLogic();return}
-  if(S.q&&G.racing&&!G.pit&&!S.wreck&&!S.air&&SAUS.length){const q=S.q,N=TR.N,kmh=Math.hypot(S.vx,S.vz)*3.6;for(const z of SAUS){if(((q.i-z.a+N)%N)<=z.b-z.a&&Math.abs(q.d-z.s*z.off)<1.1&&kmh>60){S.air={vy:kmh>250?7+(kmh-250)*.05:1.4,t:0,big:kmh>250,rr:(Math.random()<.5?-1:1)*(kmh>250?3.2:.4)};if(kmh>250)flash('LAUNCHED','Sausage kerb at '+Math.round(kmh)+' km/h','var(--signal)');G.shake=Math.max(G.shake||0,.6);break}}}
+  if(S.q&&G.racing&&!G.pit&&!S.wreck&&!S.air&&!S.god&&SAUS.length){const q=S.q,N=TR.N,kmh=Math.hypot(S.vx,S.vz)*3.6;for(const z of SAUS){if(((q.i-z.a+N)%N)<=z.b-z.a&&Math.abs(q.d-z.s*z.off)<1.1&&kmh>60){S.air={vy:kmh>250?7+(kmh-250)*.05:1.4,t:0,big:kmh>250,rr:(Math.random()<.5?-1:1)*(kmh>250?3.2:.4)};if(kmh>250)flash('LAUNCHED','Sausage kerb at '+Math.round(kmh)+' km/h','var(--signal)');G.shake=Math.max(G.shake||0,.6);break}}}
   if(S.air){const A=S.air;A.t+=dt;A.vy-=9.8*dt;S.lift=(S.lift||0)+A.vy*dt;S.roll=A.rr*A.t*.6;S.pitch=-clamp(A.vy*.05,-.5,.5)*(A.big?1.4:.5);
     if(S.lift<=0&&A.t>.05){S.lift=0;S.roll=S.pitch=0;S.air=null;G.shake=1;
       if(A.big&&G.dmgOn&&!S.wreck){S.wreck={t:0,yawV:0};crashStart(S,S.vx,S.vz,28,1);S.cvx=S.vx*.3;S.cvz=S.vz*.3;burnStart(S,true);S.wreck.yawV=S.crashYaw;S.hit=1;flash('Crash','Press R to rejoin','var(--signal)');engMad(2);radio(pick(MAD_CRASH),{pri:1})}
@@ -2557,6 +2557,20 @@ function step(dt){
   if(S.auto){const c=pitAuto(u,S.q);thr=c[0];brk=c[1];st=c[2]}
   if(S.out)thr=0;
   if(G.finished&&G.coolDone){thr=0;brk=u>.8?.6:0;const tt=TR.t[S.q.i],thT=Math.atan2(tt[0],tt[1]);st=clamp(-angDiff(thT,S.th)*1.6,-1,1)}   // parked in the pit lane: roll to a stop
+  if(S.god&&G.racing&&!G.pit&&!S.lane&&!S.wreck&&!S.auto&&!G.finished){   // GOD MODE: the car is glued to the track, 400 km/h, cars pass through each other
+    if(thr>0)u=Math.min(111.2,Math.max(u,0)+thr*45*dt);else if(brk>0)u=Math.max(0,u-brk*75*dt);else u=Math.max(0,u-6*dt);
+    S.steer+=clamp(st-S.steer,-14*dt,14*dt);
+    const q0=S.q,tt0=TR.t[q0.i],thT=Math.atan2(tt0[0],tt0[1]),sg=(l0[0]*TR.l[q0.i][0]+l0[1]*TR.l[q0.i][1])>=0?1:-1;
+    S.th+=angDiff(thT,S.th)*Math.min(1,dt*12);
+    if(!S.godOn||S.godD==null){S.godD=q0.d;S.godOn=1}
+    const gb=pitUpdate(q0);S.godD=clamp(S.godD-S.steer*sg*(6+u*.12)*dt,gb[0]+1.1,gb[1]-1.1);
+    S.vx=Math.sin(S.th)*u;S.vz=Math.cos(S.th)*u;S.x+=S.vx*dt;S.z+=S.vz*dt;
+    S.q=query(S.x,S.z,S.hint);S.hint=S.q.i;{const nl=TR.l[S.q.i],dd=S.godD-S.q.d;S.x+=nl[0]*dd;S.z+=nl[1]*dd}
+    S.q=query(S.x,S.z,S.hint);S.hint=S.q.i;
+    S.yaw=0;S.ax=S.ay=0;S.skid=0;S.slipF=S.slipR=0;S.onGrass=false;S.kerb=false;S.delta=-S.steer*.25;S.air=null;S.lift=0;
+    S.roll=lerp(S.roll,0,Math.min(1,dt*6));S.pitch=lerp(S.pitch,0,Math.min(1,dt*6));S.spin+=u/META.wheels.FL.r*dt;S.hit*=Math.exp(-dt*4);
+    engX(dt);pitLogic(dt,u);G.t+=dt;lapLogic();return}
+  S.godOn=0;
   const au=Math.abs(u);
   // steering ramp (keys are digital); slower at speed
   const rate=(Math.abs(st)>.01?12:14)/(1+au/150);
@@ -3500,14 +3514,14 @@ const cashAdd=n=>{try{localStorage.setItem('f1-cash',String(Math.max(0,cashGet()
 const own26=()=>{let a=[];try{a=JSON.parse(localStorage.getItem('f1-own26')||'[]')}catch(e){}return k=>k==='cad'||!!ACC.admin||a.includes(k)};
 const buy26=k=>{const c=P26[k]||1e6;if(cashGet()<c)return false;cashAdd(-c);let a=[];try{a=JSON.parse(localStorage.getItem('f1-own26')||'[]');a.push(k);localStorage.setItem('f1-own26',JSON.stringify(a))}catch(e){}return true};
 const fm=n=>'$'+(n>=1e6?(n/1e6).toFixed(n%1e6?2:0).replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'')+'M':Math.round(n/1e3)+'k');
-const CARLIST=[{k:'f07',n:'2007 era F1 car',d:'A classic 2007 V8-era car, plus the full 2007 championship with real 2007 drivers and teams. $1 to unlock.',paid:true}];
+const CARLIST=[{k:'f07',n:'2007 era F1 car',d:'A classic 2007 V8-era car, plus the full 2007 championship with real 2007 drivers and teams. Free.',paid:true}];
 function carsRender(){try{$('carsSub').textContent='Balance '+fm(cashGet())+' \u00b7 earn salary by finishing races, then buy team cars.'}catch(e){}let sel='f1';try{sel=localStorage.getItem('f1-car')||'f1'}catch(e){}const own=CARS_OWN();
   $('carsBody').innerHTML=CARLIST.map(c=>{const ok=own(c.k),cur=(c.k===sel&&ok)||(c.k==='f1'&&!(sel==='f07'&&own('f07'))&&!(T26V.includes(sel)&&MODELS[sel]));
     let act='';
     if(ok)act='<button class="go'+(cur?' alt':'')+'" data-k="'+c.k+'">'+(cur?'Selected':'Use this car')+'</button>';
     if(ok&&c.k==='f07')act='<button class="go" data-s7="1">2007 Championship</button>'+act;
     if(!ok)act=(PAY_URL?'<a class="go" href="'+PAY_URL+'" target="_blank" rel="noopener" style="text-decoration:none">Pay $1</a>':'')+'<span style="font:700 13px var(--mono);opacity:.85">$1 · locked</span>';
-    return '<div class="crc"><div class="crof"><div class="tm"><h3>'+esc(c.n)+(ok&&c.paid?' <small>· unlocked</small>':'')+'</h3><small>'+c.d+'</small>'
+    return '<div class="crc"><div class="crof"><div class="tm"><h3>'+esc(c.n)+(ok&&c.paid?' <small>· free</small>':'')+'</h3><small>'+c.d+'</small>'
      +(!ok?'<br><small>'+(ACC.user?'To unlock: pay $1 and send your username <b>'+esc(ACC.user)+'</b> to the game owner. They will switch it on for your account.':'Sign in to an account first, so the unlock can be saved to you.')+'</small>':'')+'</div>'+act+'</div></div>'}).join('')
   +'<h2 style="margin:22px 0 6px;font:900 italic 20px var(--display);letter-spacing:.06em;text-transform:uppercase">2026 <em style="color:var(--red,#e10600);font-style:italic">cars</em></h2>'
   +T26.map(t=>{const has=!!MODELS[t[0]],ow=own26()(t[0]),cur=has&&ow&&(sel===t[0]||(t[0]==='cad'&&!T26V.includes(sel)&&sel!=='f07')),pr=P26[t[0]]||1e6;
@@ -3602,7 +3616,7 @@ const MP={ws:null,code:'',id:0,players:[],host:false,off:0,rtt:1e9,laps:5,status
 const mpMsg=t=>{$('mpMsg').textContent=t||''};
 const ADMN={slowAI:false,slowAll:false};
 function admRender(){const p=$('admPanel');if(!p||p.hidden)return;
-  let h='<b>Admin \u00b7 slow drivers</b> <button data-a="all">'+(ADMN.slowAll?'Release all':'Slow all')+'</button> <button data-a="x">Close</button><div class="al">';
+  let h='<b>Admin \u00b7 slow drivers</b> <button data-a="god" class="'+(S.god?'on':'')+'" title="Glued to the track, 400 km/h, no collisions">God mode '+(S.god?'ON':'OFF')+'</button> <button data-a="all">'+(ADMN.slowAll?'Release all':'Slow all')+'</button> <button data-a="x">Close</button><div class="al">';
   AI.forEach((a,k)=>{if(a.gone)return;h+='<div><span>'+esc(a.liv.name)+(a.mp?' (player)':'')+'</span><button data-a="d" data-k="'+k+'" class="'+(a.admSlow?'on':'')+'">'+(a.admSlow?'Release':'Slow')+'</button></div>'});
   p.innerHTML=h+'</div>'}
 (function(){const p=document.createElement('div');p.id='admPanel';p.hidden=true;
@@ -3611,6 +3625,7 @@ function admRender(){const p=$('admPanel');if(!p||p.hidden)return;
   document.head.appendChild(st);document.body.appendChild(p);
   p.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
     if(a==='x')p.hidden=true;
+    else if(a==='god'){S.god=!S.god;S.godOn=0;flash(S.god?'GOD MODE ON':'God mode off',S.god?'Glued to the track \u00b7 400 km/h \u00b7 no collisions':'','#e10600')}
     else if(a==='all'){ADMN.slowAll=!ADMN.slowAll;if(G.mp)mpSend({t:'slow',on:ADMN.slowAll});AI.forEach(q=>{if(!q.mp)q.admSlow=ADMN.slowAll;else q.admSlow=ADMN.slowAll})}
     else if(a==='d'){const q=AI[+b.dataset.k];if(!q)return;q.admSlow=!q.admSlow;
       if(q.mp){let id=0;for(const [pid,r] of MP.rem)if(r===q)id=pid;if(id)mpSend({t:'slow',on:q.admSlow,to:id})}}
