@@ -2560,14 +2560,14 @@ function step(dt){
   if(S.out)thr=0;
   if(G.finished&&G.coolDone){thr=0;brk=u>.8?.6:0;const tt=TR.t[S.q.i],thT=Math.atan2(tt[0],tt[1]);st=clamp(-angDiff(thT,S.th)*1.6,-1,1)}   // parked in the pit lane: roll to a stop
   if(S.god&&G.racing&&!G.pit&&!S.lane&&!S.wreck&&!S.auto&&!G.finished){   // GOD MODE: the car is glued to the track, 400 km/h, cars pass through each other
-    if(thr>0)u=Math.min(555.6,Math.max(u,0)+thr*160*dt);else if(brk>0)u=Math.max(0,u-brk*75*dt);else u=Math.max(0,u-6*dt);
+    if(thr>0)u=Math.min(S.god2?2777.8:555.6,Math.max(u,0)+thr*(S.god2?600:160)*dt);else if(brk>0)u=Math.max(0,u-brk*75*dt);else u=Math.max(0,u-6*dt);
     S.steer+=clamp(st-S.steer,-14*dt,14*dt);
     const q0=S.q,tt0=TR.t[q0.i],thT=Math.atan2(tt0[0],tt0[1]),sg=(l0[0]*TR.l[q0.i][0]+l0[1]*TR.l[q0.i][1])>=0?1:-1;
     S.th+=angDiff(thT,S.th)*Math.min(1,dt*12);
     if(!S.godOn||S.godD==null){S.godD=q0.d;S.godOn=1}
     const gb=pitUpdate(q0);S.godD=clamp(S.godD-S.steer*sg*(6+u*.12)*dt,gb[0]+1.1,gb[1]-1.1);
-    S.vx=Math.sin(S.th)*u;S.vz=Math.cos(S.th)*u;S.x+=S.vx*dt;S.z+=S.vz*dt;
-    S.q=query(S.x,S.z,S.hint);S.hint=S.q.i;{const nl=TR.l[S.q.i],dd=S.godD-S.q.d;S.x+=nl[0]*dd;S.z+=nl[1]*dd}
+    S.vx=Math.sin(S.th)*u;S.vz=Math.cos(S.th)*u;
+    {const ns=Math.max(1,Math.ceil(u*dt/16));for(let k=0;k<ns;k++){S.x+=S.vx*dt/ns;S.z+=S.vz*dt/ns;S.q=query(S.x,S.z,S.hint);S.hint=S.q.i;const nl=TR.l[S.q.i],dd=S.godD-S.q.d;S.x+=nl[0]*dd;S.z+=nl[1]*dd;if(k<ns-1){const tq=TR.t[S.q.i];S.th=Math.atan2(tq[0],tq[1]);S.vx=Math.sin(S.th)*u;S.vz=Math.cos(S.th)*u}}}
     S.q=query(S.x,S.z,S.hint);S.hint=S.q.i;
     S.yaw=0;S.ax=S.ay=0;S.skid=0;S.slipF=S.slipR=0;S.onGrass=false;S.kerb=false;S.delta=-S.steer*.25;S.air=null;S.lift=0;
     S.roll=lerp(S.roll,0,Math.min(1,dt*6));S.pitch=lerp(S.pitch,0,Math.min(1,dt*6));S.spin+=u/META.wheels.FL.r*dt;S.hit*=Math.exp(-dt*4);
@@ -3630,12 +3630,13 @@ function admRender(){const p=$('admPanel');if(!p||p.hidden)return;
   document.head.appendChild(st);document.body.appendChild(p);
   p.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
     if(a==='x')p.hidden=true;
-    else if(a==='god'){S.god=!S.god;S.godOn=0;flash(S.god?'GOD MODE ON':'God mode off',S.god?'Glued to the track \u00b7 2000 km/h \u00b7 no collisions':'','#e10600')}
+    else if(a==='god'){S.god=!S.god;if(!S.god)S.god2=false;S.godOn=0;flash(S.god?'GOD MODE ON':'God mode off',S.god?'Glued to the track \u00b7 2000 km/h \u00b7 no collisions':'','#e10600')}
     else if(a==='all'){ADMN.slowAll=!ADMN.slowAll;if(G.mp)mpSend({t:'slow',on:ADMN.slowAll});AI.forEach(q=>{if(!q.mp)q.admSlow=ADMN.slowAll;else q.admSlow=ADMN.slowAll})}
     else if(a==='d'){const q=AI[+b.dataset.k];if(!q)return;q.admSlow=!q.admSlow;
       if(q.mp){let id=0;for(const [pid,r] of MP.rem)if(r===q)id=pid;if(id)mpSend({t:'slow',on:q.admSlow,to:id})}}
     admRender();e.target.blur()});
-  addEventListener('keydown',e=>{if(e.key!=='k'&&e.key!=='K')return;if(!ACC.admin||G.mode!=='play'||e.repeat)return;const t=e.target;if(t&&/INPUT|TEXTAREA/.test(t.tagName))return;
+  addEventListener('keydown',e=>{if((e.key==='g'||e.key==='G')&&!e.repeat&&ACC.admin&&G.mode==='play'&&!(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))){S.god2=!S.god2;S.god=S.god2||S.god;S.godOn=0;flash(S.god2?'GOD MODE+ ON':'God mode+ off',S.god2?'10000 km/h \u00b7 hold throttle':'','#e10600');return}
+    if(e.key!=='k'&&e.key!=='K')return;if(!ACC.admin||G.mode!=='play'||e.repeat)return;const t=e.target;if(t&&/INPUT|TEXTAREA/.test(t.tagName))return;
     p.hidden=!p.hidden;admRender()})})();
 const CARN=Object.assign({f07:'2007 car'},Object.fromEntries(T26.map(t=>[t[0],t[1]+' 2026'])));
 const carsOwned=()=>['cad',...T26V.filter(k=>k!=='cad'&&MODELS[k]&&own26()(k)),...(CARS_OWN()('f07')&&MODELS.f07?['f07']:[])];
