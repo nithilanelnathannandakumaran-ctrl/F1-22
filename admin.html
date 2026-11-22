@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,700;1,700&display=swap" rel="stylesheet"><title>F1 26 Admin</title>
-<style>
+<style>body.mod .own{display:none!important}
 :root{--bg:#0a0b12;--card:#12141f;--line:#262a3a;--fg:#f2f2f6;--mut:#9aa0b4;--red:#e10600;--ok:#35c46a;--warn:#f5b301}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 'Chakra Petch',system-ui,Segoe UI,Roboto,sans-serif;background-image:radial-gradient(900px 400px at 10% -10%,rgba(225,6,0,.16),transparent 60%),repeating-linear-gradient(115deg,transparent 0 22px,rgba(255,255,255,.015) 22px 24px);background-attachment:fixed}
 header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:3px solid var(--red);background:linear-gradient(90deg,#1a0506,#05060c 60%)}header h1 small{font-size:11px;letter-spacing:.3em;color:var(--mut);font-style:normal;margin-left:8px;vertical-align:middle}
@@ -31,15 +31,16 @@ dialog input,dialog select{width:100%}.row{display:flex;gap:8px;justify-content:
 .log{font-size:13px;color:var(--mut)}.log b{color:var(--fg)}
 @media(max-width:760px){th:nth-child(n+4),td:nth-child(n+4){display:none}td.act{display:block}}
 </style><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%232a0a0a%22/%3E%3Cstop offset=%221%22 stop-color=%22%2305060d%22/%3E%3C/linearGradient%3E%3ClinearGradient id=%22r%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%220%22%3E%3Cstop offset=%220%22 stop-color=%22%23ff4a3a%22/%3E%3Cstop offset=%221%22 stop-color=%22%23e10600%22/%3E%3C/linearGradient%3E%3CclipPath id=%22c%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22/%3E%3C/clipPath%3E%3C/defs%3E%3Cg clip-path=%22url%28%23c%29%22%3E%3Crect width=%2264%22 height=%2264%22 fill=%22url%28%23g%29%22/%3E%3Cpath d=%22M-4 58L28 6h12L8 58z%22 fill=%22url%28%23r%29%22 opacity=%22.55%22/%3E%3Cpath d=%22M12 62L44 10h10L22 62z%22 fill=%22url%28%23r%29%22 opacity=%22.35%22/%3E%3Ctext x=%2232%22 y=%2246.5%22 text-anchor=%22middle%22 font-family=%22Arial Black%2CArial%2Csans-serif%22 font-weight=%22900%22 font-style=%22italic%22 font-size=%2234%22 fill=%22%23fff%22 stroke=%22%23ff4a3a%22 stroke-width=%221.2%22%3E26%3C/text%3E%3C/g%3E%3C/svg%3E"></head><body>
-<header><img src="favicon.svg" alt="" style="width:34px;height:34px"><h1>F1 <em>26</em> <small>ADMIN</small></h1><span class="sp"></span><span id="regState" class="mut"></span><button id="regBtn" hidden>Toggle sign-ups</button><button id="outAll" hidden class="dng">Log everyone out</button><button id="out" hidden>Sign out</button></header>
+<header><img src="favicon.svg" alt="" style="width:34px;height:34px"><h1>F1 <em>26</em> <small>ADMIN</small></h1><span class="sp"></span><span id="regState" class="mut"></span><button id="regBtn" hidden class="own">Toggle sign-ups</button><button id="outAll" hidden class="dng own">Log everyone out</button><button id="out" hidden>Sign out</button></header>
 <main>
-<div id="login"><h2 style="margin-top:0">Admin sign in</h2><input id="pw" type="password" placeholder="Admin password" autocomplete="current-password"><div class="err" id="err"></div><button class="pri" id="go">Sign in</button></div>
+<div id="login"><h2 style="margin-top:0">Admin sign in</h2><div class="mut" style="margin-bottom:8px">Moderators: sign in to the game first, then open this page.</div><input id="pw" type="password" placeholder="Admin password" autocomplete="current-password"><div class="err" id="err"></div><button class="pri" id="go">Sign in</button></div>
 <div id="app" hidden>
  <div class="stats" id="stats"></div>
  <div class="tools">
-  <div class="tool"><h3>Announcement</h3><div class="mut" id="annState"></div><input id="annTx" maxlength="300" placeholder="Message shown to every player"><div class="bar2"><select id="annMin"><option value="30">30 min</option><option value="180">3 hours</option><option value="1440">24 hours</option><option value="0">Until cleared</option></select><button class="pri" id="annGo">Send</button><button id="annClr">Clear</button></div></div>
-  <div class="tool"><h3>Maintenance mode</h3><div class="mut" id="mtState"></div><input id="mtTx" maxlength="300" placeholder="Message players see"><div class="bar2"><button class="dng" id="mtOn">Turn on</button><button id="mtOff">Turn off</button></div><div class="mut">Signs every player out and blocks log-in. You stay in.</div></div>
-  <div class="tool"><h3>More</h3><div class="bar2"><button id="grpBtn">Chat groups</button><button id="purgeBtn" class="dng">Purge inactive</button><a href="/api/admin/export"><button type="button">Export users (CSV)</button></a></div></div>
+  <div class="tool own"><h3>Moderators</h3><div class="mut">Limited admins. They can rename players, see stats, mute and sign out one player, and use God mode in the game. They cannot ban, delete, reset passwords, sign everyone out or change settings.</div><div id="modList" class="bar2" style="flex-wrap:wrap"></div><input id="modNm" maxlength="20" placeholder="Player username"><div class="bar2"><button class="pri" id="modAdd">Make moderator</button></div></div>
+  <div class="tool own"><h3>Announcement</h3><div class="mut" id="annState"></div><input id="annTx" maxlength="300" placeholder="Message shown to every player"><div class="bar2"><select id="annMin"><option value="30">30 min</option><option value="180">3 hours</option><option value="1440">24 hours</option><option value="0">Until cleared</option></select><button class="pri" id="annGo">Send</button><button id="annClr">Clear</button></div></div>
+  <div class="tool own"><h3>Maintenance mode</h3><div class="mut" id="mtState"></div><input id="mtTx" maxlength="300" placeholder="Message players see"><div class="bar2"><button class="dng" id="mtOn">Turn on</button><button id="mtOff">Turn off</button></div><div class="mut">Signs every player out and blocks log-in. You stay in.</div></div>
+  <div class="tool own"><h3>More</h3><div class="bar2"><button id="grpBtn">Chat groups</button><button id="purgeBtn" class="dng">Purge inactive</button><a href="/api/admin/export"><button type="button">Export users (CSV)</button></a></div></div>
  </div>
  <div class="bar"><input id="q" placeholder="Search username"><button id="refresh">Refresh</button></div>
  <table><thead><tr><th>Username</th><th>Status</th><th>Driver name</th><th>Joined</th><th>Last seen</th><th></th></tr></thead><tbody id="rows"></tbody></table>
@@ -47,27 +48,30 @@ dialog input,dialog select{width:100%}.row{display:flex;gap:8px;justify-content:
 </div></main>
 <dialog id="dlg"><form method="dialog" id="dform"><h3 id="dt"></h3><div id="db"></div><div class="row"><button value="x" type="button" id="dc">Cancel</button><button class="pri" id="dok" value="ok">Confirm</button></div></form></dialog>
 <script>
-const $=id=>document.getElementById(id);let D=null;
+const $=id=>document.getElementById(id);let D=null,ROLE='';
 const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function api(path,body,method){const r=await fetch('/api/admin/'+path,{method:method||(body?'POST':'GET'),headers:{'content-type':'application/json'},body:body?JSON.stringify(body):undefined});
   let j={};try{j=await r.json()}catch(e){}if(r.status===401&&path!=='login'){show(false)}return {ok:r.ok,j}}
 const ago=(t,now)=>{if(!t)return'never';const s=Math.max(0,(now-t)/1000);return s<90?'just now':s<5400?Math.round(s/60)+' min ago':s<172800?Math.round(s/3600)+' h ago':Math.round(s/86400)+' d ago'};
 const fd=t=>new Date(t).toLocaleDateString();
 function show(on){$('login').hidden=on;$('app').hidden=!on;$('out').hidden=$('regBtn').hidden=$('outAll').hidden=!on;if(!on)$('regState').textContent=''}
-async function load(){const {ok,j}=await api('overview?q='+encodeURIComponent($('q').value));if(!ok)return;D=j;show(true);
+async function load(){const {ok,j}=await api('overview?q='+encodeURIComponent($('q').value));if(!ok)return;D=j;ROLE=j.role;document.body.classList.toggle('mod',ROLE==='mod');show(true);
+  $('modList').innerHTML=(j.mods||[]).map(n=>`<button data-m="${esc(n)}">${esc(n)} &times;</button>`).join('')||'<span class="mut">No moderators yet</span>';
   $('stats').innerHTML=[['Accounts',j.stats.total],['Online now',j.stats.online||0],['Banned',j.stats.banned||0],['Joined 24h',j.stats.today||0],['Friendships',j.stats.friends||0],['Direct messages',j.stats.dms||0],['Groups',j.stats.groups||0],['Group messages',j.stats.gmsgs||0]].map(s=>`<div class="stat"><b>${s[1]}</b><span>${s[0]}</span></div>`).join('');
-  $('regState').textContent='Sign-ups: '+(j.registration?'open':'CLOSED');
+  $('regState').textContent=ROLE==='mod'?'Moderator access':'Sign-ups: '+(j.registration?'open':'CLOSED');
   $('annState').textContent=j.announce?'Live: '+j.announce:'No announcement live';$('mtState').textContent=j.maintenance?'ON: '+j.maintenance:'Off';
   $('rows').innerHTML=j.users.map(u=>{const b=u.banned_until>j.now;const on=u.last_seen>j.now-3e5;
     const mu=u.muted_until>j.now?` <span class="tag t-ban">Muted</span>`:'';
     const st=(b?`<span class="tag t-ban">Banned ${u.banned_until>=9e15?'permanently':'until '+new Date(u.banned_until).toLocaleString()}</span>`:on?'<span class="tag t-on">Online</span>':'<span class="tag t-ok">Active</span>')+mu;
     return `<tr><td><b>${esc(u.username)}</b>${u.ban_reason&&b?`<div class="mut">${esc(u.ban_reason)}</div>`:''}</td><td>${st}</td><td>${esc(u.driver)||'<span class="mut">-</span>'}</td><td class="mut">${fd(u.created_at)}</td><td class="mut">${ago(u.last_seen,j.now)}${u.nfriends?' &middot; '+u.nfriends+' friends':''}</td>
-    <td class="act"><button data-a="rename" data-i="${u.id}">Rename</button> <button data-a="${b?'unban':'ban'}" data-i="${u.id}" class="${b?'':'dng'}">${b?'Unban':'Ban'}</button> <button data-a="more" data-i="${u.id}">More</button></td></tr>`}).join('')||'<tr><td colspan="6" class="mut">No accounts yet</td></tr>';
+    <td class="act"><button data-a="rename" data-i="${u.id}">Rename</button> <button data-a="${b?'unban':'ban'}" data-i="${u.id}" class="own ${b?'':'dng'}">${b?'Unban':'Ban'}</button> <button data-a="more" data-i="${u.id}">More</button></td></tr>`}).join('')||'<tr><td colspan="6" class="mut">No accounts yet</td></tr>';
   $('log').innerHTML=j.log.map(l=>`<div><b>${esc(l.action)}</b> ${esc(l.target)} <span>${esc(l.detail)}</span> &middot; ${new Date(l.at).toLocaleString()}</div>`).join('')||'No activity yet'}
-function ask(title,html,okText){return new Promise(res=>{$('dt').textContent=title;$('db').innerHTML=html;$('dok').textContent=okText||'Confirm';const d=$('dlg');
+function ask(title,html,okText){if(ROLE==='mod'&&html.includes('<select name="a">'))html=html.replace(/<option value="(?!chat"|mute"|unmute"|kick")[^"]*">[^<]*<\/option>/g,'');return new Promise(res=>{$('dt').textContent=title;$('db').innerHTML=html;$('dok').textContent=okText||'Confirm';const d=$('dlg');
   const done=v=>{d.close();res(v)};$('dc').onclick=()=>done(null);$('dform').onsubmit=e=>{e.preventDefault();done(Object.fromEntries([...new FormData($('dform'))]))};d.showModal()})}
 async function act(path,body,ok){const {ok:g,j}=await api(path,body);if(!g)alert(j.error||'Failed');else if(ok)alert(ok);load()}
 const U=id=>D.users.find(u=>u.id==id);
+$('modAdd').onclick=async()=>{const n=$('modNm').value.trim();if(!n)return;const x=await api('mods',{name:n,on:true});if(!x.ok)return alert(x.j.error||'Failed');$('modNm').value='';load()};
+$('modList').onclick=async e=>{const b=e.target.closest('button[data-m]');if(!b)return;if(confirm('Remove moderator '+b.dataset.m+'?')){await api('mods',{name:b.dataset.m,on:false});load()}};
 $('rows').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const id=+b.dataset.i,u=U(id),a=b.dataset.a;
   if(a==='rename'){const r=await ask('Rename '+u.username,`<label>Username (used to sign in)</label><input name="username" value="${esc(u.username)}" maxlength="20" required><label>Driver name shown in game</label><input name="driver" value="${esc(u.driver||u.username)}" maxlength="22">`,'Save');
     if(!r)return;if(r.username!==u.username){const x=await api('rename',{id,username:r.username});if(!x.ok)return alert(x.j.error)}
