@@ -51,16 +51,24 @@ async function newSession(env, userId) {
   await env.DB.prepare('DELETE FROM sessions WHERE expires<?').bind(Date.now()).run();
   return t;
 }
-const pub = (u, env) => ({ user: u.username, profile: JSON.parse(u.profile || '{}'), isAdmin: u.username_lc === adminName(env) });
+let MODS = [];   // moderators (limited admins), refreshed on every API request
+const pub = (u, env) => ({ user: u.username, profile: JSON.parse(u.profile || '{}'), isAdmin: u.username_lc === adminName(env), isMod: MODS.includes(u.username_lc) });
 
-async function adminOK(req, env) {
-  const su = await userFromSession(req, env);   // signed in to the game as the admin username
-  if (su && su.username_lc === adminName(env)) return true;
-  const t = cookies(req).adm; if (!t || !env.ADMIN_PASSWORD) return false;
-  const [exp, sig] = t.split('.');
-  if (!exp || !sig || +exp < Date.now()) return false;
-  return safeEq(sig, await hmac(env.ADMIN_PASSWORD, 'admin.' + exp));
+// 'owner' = full control, 'mod' = limited moderator (rename, stats, mute, sign one player out, god mode), '' = no access
+async function roleOf(req, env) {
+  const su = await userFromSession(req, env);   // signed in to the game
+  if (su && su.username_lc === adminName(env)) return 'owner';
+  const t = cookies(req).adm;
+  if (t && env.ADMIN_PASSWORD) {
+    const [exp, sig] = t.split('.');
+    if (exp && sig && +exp >= Date.now() && safeEq(sig, await hmac(env.ADMIN_PASSWORD, 'admin.' + exp))) return 'owner';
+  }
+  if (su && MODS.includes(su.username_lc)) return 'mod';
+  return '';
 }
+const adminOK = async (req, env) => (await roleOf(req, env)) !== '';
+async function loadMods(env) { try { MODS = JSON.parse(await setting(env, 'mods', '[]')).map(x => String(x).toLowerCase()); } catch (e) { MODS = []; } }
+const MOD_ACTS = ['overview', 'rename', 'driver', 'kick', 'mute', 'unmute', 'chat'];
 let schemaOK = false;
 async function ensureSchema(env) {
   if (schemaOK) return;
@@ -93,6 +101,7 @@ export default {
     }
     try {
       await ensureSchema(env);
+      await loadMods(env);
       /* ---------- multiplayer rooms (WebSocket -> Durable Object) ---------- */
       if (p === '/api/room') {
         if (req.headers.get('upgrade') !== 'websocket') return json({ error: 'WebSocket required' }, 426);
@@ -293,8 +302,23 @@ export default {
         return json({ ok: true }, 200, { 'set-cookie': setCookie('adm', exp + '.' + sig, 12 * 3600) });
       }
       if (p.startsWith('/api/admin/')) {
-        if (!(await adminOK(req, env))) return json({ error: 'Admin sign-in required' }, 401);
+        const role = await roleOf(req, env);
+        if (!role) return json({ error: 'Admin sign-in required' }, 401);
         if (p === '/api/admin/logout') return json({ ok: true }, 200, { 'set-cookie': setCookie('adm', '', 0) });
+        if (role === 'mod' && !MOD_ACTS.includes(p.slice('/api/admin/'.length))) return json({ error: 'Owner only. Moderators can rename, view stats, mute and sign out one player.' }, 403);
+        if (p === '/api/admin/mods') {
+          if (m === 'GET') return json({ mods: MODS });
+          const nm = String(body.name || '').trim().toLowerCase();
+          if (!nm) return json({ error: 'Type a username' }, 400);
+          if (body.on) {
+            const ex = await env.DB.prepare('SELECT username_lc FROM users WHERE username_lc=?').bind(nm).first();
+            if (!ex) return json({ error: 'No player with that username' }, 404);
+            if (nm === adminName(env)) return json({ error: 'That is the owner account' }, 400);
+            MODS = Array.from(new Set(MODS.concat(nm)));
+          } else MODS = MODS.filter(x => x !== nm);
+          await env.DB.prepare('INSERT OR REPLACE INTO settings(k,v) VALUES(?,?)').bind('mods', JSON.stringify(MODS)).run();
+          await audit(env, body.on ? 'mod-add' : 'mod-remove', nm); return json({ ok: true, mods: MODS });
+        }
         if (p === '/api/admin/overview' && m === 'GET') {
           const now = Date.now();
           const q = (url.searchParams.get('q') || '').trim().toLowerCase();
@@ -305,7 +329,7 @@ export default {
           const st = await env.DB.prepare('SELECT COUNT(*) total,SUM(banned_until>?) banned,SUM(last_seen>?) online,SUM(created_at>?) today FROM users').bind(now, now - 5 * 60e3, now - 864e5).first();
           const log = (await env.DB.prepare('SELECT at,action,target,detail FROM audit ORDER BY id DESC LIMIT 60').all()).results;
           const ex = await env.DB.prepare('SELECT (SELECT COUNT(*) FROM dms) dms,(SELECT COUNT(*) FROM grp) groups,(SELECT COUNT(*) FROM grp_msg) gmsgs,(SELECT COUNT(*) FROM friends WHERE status=\'ok\') friends').first();
-          return json({ now, stats: { ...st, ...ex }, registration: (await setting(env, 'registration', 'on')) === 'on', announce: await announceNow(env), maintenance: await maintOn(env), users, log });
+          return json({ role, mods: role === 'owner' ? MODS : [], now, stats: { ...st, ...ex }, registration: (await setting(env, 'registration', 'on')) === 'on', announce: await announceNow(env), maintenance: await maintOn(env), users, log });
         }
         if (p === '/api/admin/registration' && m === 'POST') {
           await env.DB.prepare('INSERT OR REPLACE INTO settings(k,v) VALUES(?,?)').bind('registration', body.on ? 'on' : 'off').run();
@@ -360,6 +384,7 @@ export default {
         if (!u) return json({ error: 'User not found' }, 404);
         const act = p.slice('/api/admin/'.length);
         if (u.username_lc === adminName(env) && ['ban', 'rename', 'password', 'delete'].includes(act)) return json({ error: 'The admin account is protected' }, 400);
+        if (role === 'mod' && (MODS.includes(u.username_lc))) return json({ error: 'Moderators cannot act on other moderators' }, 403);
         if (act === 'ban') {
           const mins = +body.minutes; const until = mins > 0 ? Date.now() + mins * 60e3 : PERM;
           // sessions are kept so the player's next /api/me check shows the ban reason; every request re-checks the ban
@@ -373,6 +398,7 @@ export default {
           const clash = await env.DB.prepare('SELECT id FROM users WHERE username_lc=? AND id<>?').bind(name.toLowerCase(), id).first();
           if (clash) return json({ error: 'That username is taken' }, 409);
           await env.DB.prepare('UPDATE users SET username=?,username_lc=? WHERE id=?').bind(name, name.toLowerCase(), id).run();
+          if (MODS.includes(u.username_lc)) { MODS = MODS.map(x => x === u.username_lc ? name.toLowerCase() : x); await env.DB.prepare('INSERT OR REPLACE INTO settings(k,v) VALUES(?,?)').bind('mods', JSON.stringify(MODS)).run(); }
           await audit(env, 'rename', u.username, '-> ' + name); return json({ ok: true });
         }
         if (act === 'driver') {
