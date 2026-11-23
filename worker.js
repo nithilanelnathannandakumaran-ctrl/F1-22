@@ -82,6 +82,7 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE INDEX IF NOT EXISTS gm_i ON grp_msg(g,id)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS reads(u INTEGER,k TEXT,last INTEGER,PRIMARY KEY(u,k))'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS mutes(u INTEGER PRIMARY KEY,until INTEGER)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS feedback(id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER,user TEXT,kind TEXT,txt TEXT,info TEXT)'),
   ]);
   schemaOK = true;
 }
@@ -185,6 +186,19 @@ export default {
         try { const old = JSON.parse(u.profile || '{}'); if (Array.isArray(old.unlocks)) clean.unlocks = old.unlocks; } catch (e) {}   // paid unlocks are set by the admin only, never by the client
         const s = JSON.stringify(clean); if (s.length > 7000) return json({ error: 'Too large' }, 400);
         await env.DB.prepare('UPDATE users SET profile=? WHERE id=?').bind(s, u.id).run();
+        return json({ ok: true });
+      }
+
+      /* ---------- reviews & bug reports ---------- */
+      if (p === '/api/feedback' && m === 'POST') {
+        const me = await userFromSession(req, env);
+        let body = {}; try { body = await req.json(); } catch (e) {}
+        const txt = String(body.text || '').trim().slice(0, 1200), kind = body.kind === 'bug' ? 'bug' : 'review';
+        if (txt.length < 3) return json({ error: 'Write a bit more' }, 400);
+        const ip = req.headers.get('cf-connecting-ip') || 'x', nowF = Date.now();
+        const recent = await env.DB.prepare('SELECT COUNT(*) c FROM feedback WHERE at>? AND (user=? OR info LIKE ?)').bind(nowF - 600e3, me ? me.username : '', '%' + ip + '%').first();
+        if (recent && recent.c >= 5) return json({ error: 'Slow down, try again in a few minutes' }, 429);
+        await env.DB.prepare('INSERT INTO feedback(at,user,kind,txt,info) VALUES(?,?,?,?,?)').bind(nowF, me ? me.username : '', kind, txt, (String(body.info || '').slice(0, 300) + ' ' + ip)).run();
         return json({ ok: true });
       }
 
@@ -318,6 +332,14 @@ export default {
           } else MODS = MODS.filter(x => x !== nm);
           await env.DB.prepare('INSERT OR REPLACE INTO settings(k,v) VALUES(?,?)').bind('mods', JSON.stringify(MODS)).run();
           await audit(env, body.on ? 'mod-add' : 'mod-remove', nm); return json({ ok: true, mods: MODS });
+        }
+        if (p === '/api/admin/feedback' && m === 'GET') {
+          return json({ items: (await env.DB.prepare('SELECT id,at,user,kind,txt,info FROM feedback ORDER BY id DESC LIMIT 200').all()).results });
+        }
+        if (p === '/api/admin/feedback-delete' && m === 'POST') {
+          let fb = {}; try { fb = await req.json(); } catch (e) {}
+          await env.DB.prepare('DELETE FROM feedback WHERE id=?').bind(Number(fb.id) || 0).run();
+          return json({ ok: true });
         }
         if (p === '/api/admin/overview' && m === 'GET') {
           const now = Date.now();
