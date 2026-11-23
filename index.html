@@ -3688,7 +3688,7 @@ const MP={ws:null,code:'',id:0,players:[],host:false,off:0,rtt:1e9,laps:5,status
 const mpMsg=t=>{$('mpMsg').textContent=t||''};
 const ADMN={slowAI:false,slowAll:false};
 function admRender(){const p=$('admPanel');if(!p||p.hidden)return;
-  let h='<b>Admin \u00b7 slow drivers</b> <button data-a="god" class="'+(S.god?'on':'')+'" title="Glued to the track, 2000 km/h, no collisions">God mode '+(S.god?'ON':'OFF')+'</button> <button data-a="all">'+(ADMN.slowAll?'Release all':'Slow all')+'</button> <button data-a="x">Close</button><div class="al">';
+  let h='<b>Admin \u00b7 slow drivers</b> <button data-a="all">'+(ADMN.slowAll?'Release all':'Slow all')+'</button> <button data-a="x">Close</button><div class="al">';
   AI.forEach((a,k)=>{if(a.gone)return;h+='<div><span>'+esc(a.liv.name)+(a.mp?' (player)':'')+'</span><button data-a="d" data-k="'+k+'" class="'+(a.admSlow?'on':'')+'">'+(a.admSlow?'Release':'Slow')+'</button></div>'});
   p.innerHTML=h+'</div>'}
 (function(){const p=document.createElement('div');p.id='admPanel';p.hidden=true;
@@ -3697,13 +3697,12 @@ function admRender(){const p=$('admPanel');if(!p||p.hidden)return;
   document.head.appendChild(st);document.body.appendChild(p);
   p.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
     if(a==='x')p.hidden=true;
-    else if(a==='god'){S.god=!S.god;if(!S.god)S.god2=false;S.godOn=0;flash(S.god?'GOD MODE ON':'God mode off',S.god?'Glued to the track \u00b7 2000 km/h \u00b7 no collisions':'','#e10600')}
+    else if(false){flash(S.god?'GOD MODE ON':'God mode off',S.god?'Glued to the track \u00b7 2000 km/h \u00b7 no collisions':'','#e10600')}
     else if(a==='all'){ADMN.slowAll=!ADMN.slowAll;if(G.mp)mpSend({t:'slow',on:ADMN.slowAll});AI.forEach(q=>{if(!q.mp)q.admSlow=ADMN.slowAll;else q.admSlow=ADMN.slowAll})}
     else if(a==='d'){const q=AI[+b.dataset.k];if(!q)return;q.admSlow=!q.admSlow;
       if(q.mp){let id=0;for(const [pid,r] of MP.rem)if(r===q)id=pid;if(id)mpSend({t:'slow',on:q.admSlow,to:id})}}
     admRender();e.target.blur()});
-  addEventListener('keydown',e=>{if((e.key==='g'||e.key==='G')&&!e.repeat&&(ACC.admin||ACC.mod)&&G.mode==='play'&&!(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))){S.god2=!S.god2;S.god=S.god2||S.god;S.godOn=0;flash(S.god2?'GOD MODE+ ON':'God mode+ off',S.god2?'10000 km/h \u00b7 hold throttle':'','#e10600');return}
-    if(e.key!=='k'&&e.key!=='K')return;if(!(ACC.admin||ACC.mod)||G.mode!=='play'||e.repeat)return;const t=e.target;if(t&&/INPUT|TEXTAREA/.test(t.tagName))return;
+  addEventListener('keydown',e=>{if(e.key!=='k'&&e.key!=='K')return;if(!(ACC.admin||ACC.mod)||G.mode!=='play'||e.repeat)return;const t=e.target;if(t&&/INPUT|TEXTAREA/.test(t.tagName))return;
     p.hidden=!p.hidden;admRender()})})();
 const CARN=Object.assign({f07:'2007 car'},Object.fromEntries(T26.map(t=>[t[0],t[1]+' 2026'])));
 const carsOwned=()=>['cad',...T26V.filter(k=>k!=='cad'&&MODELS[k]&&own26()(k)),...(CARS_OWN()('f07')&&MODELS.f07?['f07']:[])];
