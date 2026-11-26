@@ -363,6 +363,15 @@ button.go:hover:not(:disabled){filter:brightness(1.18)}
 .flagbar{top:calc(110px + var(--lbh,0px))!important;right:8px!important;font-size:13px!important;max-width:150px!important;padding:4px 8px!important}
 .flagbar small{font-size:10px}
 }
+
+/* home menu: secondary buttons as full rows */
+.overlay.home #tiles{grid-column:1/3}
+.overlay.home .card>.btns:not(#lapRow):not(#trkRow){grid-column:3;grid-row:2;display:flex;flex-direction:column;flex-wrap:nowrap;align-self:stretch;justify-content:stretch;gap:8px;width:clamp(210px,24vw,320px);min-height:0;overflow:auto}
+.overlay.home .card>.btns:not(#lapRow):not(#trkRow) button.go{flex:1 1 0;min-height:44px;width:100%;clip-path:none!important;border-radius:0!important;border:1px solid rgba(255,255,255,.1);border-left:4px solid var(--signal,#e10600);background:linear-gradient(110deg,#1a1d27,#10121a);display:flex;align-items:flex-end;justify-content:flex-end;text-align:right;padding:6px clamp(12px,1.6vw,22px);font:900 italic clamp(18px,3.6vh,32px)/1 var(--display);text-transform:uppercase;color:#fff;letter-spacing:-.01em;box-shadow:none}
+.overlay.home .card>.btns:not(#lapRow):not(#trkRow) button.go:hover{filter:brightness(1.3);transform:translateY(-1px)}
+.overlay.home .card>.btns:not(#lapRow):not(#trkRow) button.go[hidden]{display:none}
+@media(max-width:1000px){.overlay.home #tiles{grid-column:1}.overlay.home .card>.btns:not(#lapRow):not(#trkRow){width:auto;grid-column:1;grid-row:auto;overflow:visible}.overlay.home .card>.btns:not(#lapRow):not(#trkRow) button.go{flex:0 0 auto;height:56px}}
+.overlay.home .card>.btns:not(#lapRow):not(#trkRow) #goRace,.overlay.home .card>.btns:not(#lapRow):not(#trkRow) #goTA,.overlay.home .card>.btns:not(#lapRow):not(#trkRow) #goLiv,.overlay.home .card>.btns:not(#lapRow):not(#trkRow) #goCars{display:none}
 </style>
 
 <canvas id="gl"></canvas><canvas id="rain"></canvas>
